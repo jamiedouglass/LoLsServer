@@ -1,0 +1,20 @@
+Contributions
+====
+
+The following is a history of the contributions others have made to the development of 
+Language of Languages (LoLs).
+
+Language of Languages (LoLs) began as a proof of concept demonstration developed first in 
+Smalltalk using Squeak and then migrated to Pharo. The current web implementation forked
+OMeta-JS to bootstrap and develop the LoLs language workbench.
+
+Acknowledgements
+==
+
+The following provided contributions to Language of Languages (LoLs):
+
+Nicholas (Nick) Chen
+Andronetta (Andi) Douglass
+James (Jamie) Douglass
+Alyssa Pavao
+Alessandro (Alex) Warth (see "ometa-js LICENSE" file)

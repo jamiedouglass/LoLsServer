@@ -9,11 +9,11 @@ Domain Specific Languages (DSLs) to gain the 10x productivity improvement DSLs p
 LoLs creates interpreters and translators to other languages and integrates languages 
 with different notations. 
 
-The initial release of this open source project provides a minimal working language 
-workbench. This version supports textual languages and enough functionality to develop 
-future releases. We are creating a Software as a Service Language Workbench which 
-operates only on the client side. Nothing to download or install. All your information 
-remains on your computer.
+This open source project provides a minimal working language workbench. 
+This version supports textual languages and enough functionality to develop 
+future releases. We are creating a Language Workbench and Server which 
+operates with a client-server architecture as a Website and server. There is nothing 
+to download or install. 
 
 Most of the workbench features and functionality are yet to be implemented. 
 Please join us to make Language of Languages available to everyone.
@@ -37,11 +37,18 @@ Language of Languages (LoLs) is being bootstrapped and written in itself. This i
 the parser and metalanguage. LoLs compiles into JavaScript and directly executed. Work is
 divided into workspace files. Each workspace consists of interrelated views and languages.
 
+Project Organization
+--------------------
+Language of Languages is organized as following:
+* LoLsWorkbench repository contains the website to open and edit a workspace to create and modify a language. This includes using languages to translate source input into object output.
+* LoLsServer repository contains the Node.js server which processes languages to perform translations.
+* LoLsOMetaJS repository contains the initial metalanguage used in Language of Languages.
+
 Using Language of languages (LoLs) Workbench
 --------------------------------------------
 
 LoLs is accessible for the workbench link on the Language of Languages (LoLs) website
-[www.languageoflanguages.com/workbench/](http://www.languageoflanguages.com/workbench/).
+[www.languageoflanguages.com/LoLsWorkbench/](http://www.languageoflanguages.com/LoLsWorkbench/).
 Workspace files can be loaded and saved to your computer.
 
 Reporting issues

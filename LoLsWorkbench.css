@@ -1,0 +1,124 @@
+/* Header */
+
+#InfoArea {
+  float: right; 
+  margin: 10px;
+  text-align: center; 
+}
+
+#LearnMore {
+  margin-top: 10px;
+}
+
+#Banner {
+  vertical-align: middle;
+}
+
+#lols-icon {
+  height: 97px;
+  width: 128px;
+}
+
+#lols-name {
+  height: 92px;
+  width: 580px;
+}
+
+#LangRibbon {
+  background-color: black; 
+  width: 100%;
+}
+
+/* Language Ribbon */
+
+#LangRibbon button {
+  background-color: black;
+  border-color: white;
+  border-style: none solid none none;
+  border-width: 1px;
+  color: white;
+  font-family: monaco;
+  font-size: 10pt;
+}
+
+/* Forms */
+
+#SignInWorkbench,
+#langForm,
+#OpenWorkspace,
+#openView {
+     visibility: hidden;
+     position: absolute;
+     left: 0px;
+     top: 0px;
+     width:100%;
+     height:100%;
+     text-align:center;
+     z-index: 1000;
+//     background-image:url(images/background-trans.png);
+}
+#SignInWorkbench div,
+#langForm div ,
+#OpenWorkspace div,
+#openView div {
+     width:300px;
+     margin: 100px auto;
+     background-color: #fff;
+     border:1px solid #000;
+     padding:15px;
+     text-align:center;
+}
+/* Workspace Area */
+
+.WorkspaceTitle input {
+  border: 0px solid white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.LoLsViewName {
+  border: 0px solid white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.WorkspaceTitle button img,
+.LoLsViewTitle button img {
+  height: 16px;
+  width: 16px;
+}
+
+.WorkspaceTitle button,
+.LoLsViewTitle button {
+  background-color: white;
+  border: 1px solid lightgrey;
+  border-radius: 4px;
+}
+
+.LoLsViewEditor {
+  border: 1px solid #DDD;
+  border-radius: 4px;
+  border-bottom-right-radius: 0;
+  display: block;
+  height: 100px;
+  margin-top: 5px;
+  visibility: visible; 
+  width: 100%;
+}
+
+/* footer */
+
+#acknowledgement p {
+  text-align: right;
+}
+
+#acknowledgement img {
+  vertical-align: middle;
+  height: 80px;
+  width: 198px;
+}
+#measure {
+  position: absolute;
+  left: -10000px;
+  top: 0px;
+}

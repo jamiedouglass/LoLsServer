@@ -1,34 +1,14 @@
-// generate locally unique id from string argument
-
-function genLocalId(s) {
-  var c, sid="";
-  for (var i=0; i<s.length; i++) {
-    c=s[i];
-    if (c>="A" && c<="Z" || c>="a" && c<="z" ) {
-      sid=sid+c;
-	}
-  }
-  c=document.getElementById(sid);
-  while (c!=null) {
-    sid= sid+"0";
-  	c=document.getElementById(sid);
-  } 
-  return sid;
-}
-
 // try to use StringBuffer instead of string concatenation to improve performance
-
-function StringBuffer() {
+StringBuffer = function() {
   this.strings = []
   for (var idx = 0; idx < arguments.length; idx++)
     this.nextPutAll(arguments[idx])
-}
-StringBuffer.prototype.nextPutAll = function(s) { this.strings.push(s) }
-StringBuffer.prototype.contents   = function()  { return this.strings.join("") }
-String.prototype.writeStream      = function() { return new StringBuffer(this) }
+};
+StringBuffer.prototype.nextPutAll = function(s) { this.strings.push(s) };
+StringBuffer.prototype.contents   = function()  { return this.strings.join("") };
+String.prototype.writeStream      = function() { return new StringBuffer(this) };
 
 // make Arrays print themselves sensibly
-
 printOn = function(x, ws) {
   if (x === undefined || x === null)
     ws.nextPutAll("" + x)
@@ -43,12 +23,12 @@ printOn = function(x, ws) {
   }
   else
     ws.nextPutAll(x.toString())
-}
+};
 
-Array.prototype.toString = function() { var ws = "".writeStream(); printOn(this, ws); return ws.contents() }
+// ?????
+Array.prototype.toString = function() { var ws = "".writeStream(); printOn(this, ws); return ws.contents() };
 
 // delegation
-
 objectThatDelegatesTo = function(x, props) {
   var f = function() { }
   f.prototype = x
@@ -57,41 +37,41 @@ objectThatDelegatesTo = function(x, props) {
     if (props.hasOwnProperty(p))
       r[p] = props[p]
   return r
-}
+};
 
 // some reflective stuff
-
 ownPropertyNames = function(x) {
   var r = []
   for (var name in x)
     if (x.hasOwnProperty(name))
       r.push(name)
   return r
-}
+};
 
 isImmutable = function(x) {
    return x === null || x === undefined || typeof x === "boolean" || typeof x === "number" || typeof x === "string"
-}
+};
 
-String.prototype.digitValue  = function() { return this.charCodeAt(0) - "0".charCodeAt(0) }
+// ????
+String.prototype.digitValue  = function() { return this.charCodeAt(0) - "0".charCodeAt(0) };
 
-isSequenceable = function(x) { return typeof x == "string" || x.constructor === Array }
+isSequenceable = function(x) { return typeof x == "string" || x.constructor === Array };
 
 // some functional programming stuff
-
+// ?????
 Array.prototype.map = function(f) {
   var r = []
   for (var idx = 0; idx < this.length; idx++)
     r[idx] = f(this[idx])
   return r
-}
+};
 
 Array.prototype.reduce = function(f, z) {
   var r = z
   for (var idx = 0; idx < this.length; idx++)
     r = f(r, this[idx])
   return r
-}
+};
 
 Array.prototype.delimWith = function(d) {
   return this.reduce(
@@ -102,25 +82,24 @@ Array.prototype.delimWith = function(d) {
       return xs
     },
    [])
-}
+};
 
 // Squeak's ReadStream, kind of
-
-function ReadStream(anArrayOrString) {
+ReadStream = function(anArrayOrString) {
   this.src = anArrayOrString
   this.pos = 0
-}
-ReadStream.prototype.atEnd = function() { return this.pos >= this.src.length }
-ReadStream.prototype.next  = function() { return this.src.at(this.pos++) }
+};
+ReadStream.prototype.atEnd = function() { return this.pos >= this.src.length };
+ReadStream.prototype.next  = function() { return this.src.at(this.pos++) };
 
 // escape characters
-
+// ?????
 String.prototype.pad = function(s, len) {
   var r = this
   while (r.length < len)
     r = s + r
   return r
-}
+};
 
 escapeStringFor = new Object()
 for (var c = 0; c < 128; c++)
@@ -142,9 +121,9 @@ escapeChar = function(c) {
     return "\\x" + charCode.toString(16).pad("0", 2)
   else
     return "\\u" + charCode.toString(16).pad("0", 4)
-}
+};
 
-function unescape(s) {
+unescape = function(s) {
   if (s.charAt(0) == '\\')
     switch (s.charAt(1)) {
       case "'":  return "'"
@@ -162,23 +141,22 @@ function unescape(s) {
     }
   else
     return s
-}
+};
 
+// ????
 String.prototype.toProgramString = function() {
   var ws = '"'.writeStream()
   for (var idx = 0; idx < this.length; idx++)
     ws.nextPutAll(escapeChar(this.charAt(idx)))
   ws.nextPutAll('"')
   return ws.contents()
-}
+};
 
 // C-style tempnam function
-
-function tempnam(s) { return (s ? s : "_tmpnam_") + tempnam.n++ }
-tempnam.n = 0
+tempnam = function(s) { return (s ? s : "_tmpnam_") + tempnam.n++ };
+tempnam.n = 0;
 
 // unique tags for objects (useful for making "hash tables")
-
 getTag = (function() {
   var numIdx = 0
   return function(x) {
@@ -191,5 +169,15 @@ getTag = (function() {
       default:        return x.hasOwnProperty("_id_") ? x._id_ : x._id_ = "R" + numIdx++
     }
   }
-})()
+})();
 
+exports.StringBuffer = StringBuffer;
+exports.objectThatDelegatesTo = objectThatDelegatesTo;
+exports.ownPropertyNames = ownPropertyNames;
+exports.isImmutable = isImmutable;
+exports.isSequenceable = isSequenceable;
+exports.ReadStream = ReadStream;
+exports.escapeStringFor = escapeStringFor;
+exports.unescape =  unescape;
+exports.tempnam = tempnam;
+exports.getTag = getTag;

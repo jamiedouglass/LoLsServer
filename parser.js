@@ -1,13 +1,13 @@
 /*
   new syntax:
     #foo and `foo	match the string object 'foo' (it's also accepted in my JS)
-    'abc'		match the string object 'abc'
-    'c'			match the string object 'c'
-    ``abc''		match the sequence of string objects 'a', 'b', 'c'
-    "abc"		token('abc')
-    [1 2 3]		match the array object [1, 2, 3]
+    'abc'		    match the string object 'abc'
+    'c'			    match the string object 'c'
+    ``abc''		    match the sequence of string objects 'a', 'b', 'c'
+    "abc"		    token('abc')
+    [1 2 3]		    match the array object [1, 2, 3]
     foo(bar)		apply rule foo with argument bar
-    -> ...		semantic actions written in JS (see OMetaParser's atomicHostExpr rule)
+    -> ...		    semantic actions written in JS (see OMetaParser's atomicHostExpr rule)
 */
 
 /*
@@ -32,16 +32,18 @@ M = objectThatDelegatesTo(OMeta, {
                            )
           }
 })
-M.matchAll("123456789", "number")
+M.match("123456789", "number")
 */
+
+const lib=require("./lib");
 
 // the failure exception
 
-fail = { toString: function() { return "match failed" } }
+fail = { toString: function() { return "match failed" } };
 
 // streams and memoization
 
-function OMInputStream(hd, tl) {
+OMInputStream = function(hd, tl) {
   this.memo = { }
   this.lst  = tl.lst
   this.idx  = tl.idx
@@ -60,12 +62,12 @@ OMInputStream.prototype.upTo = function(that) {
   return this.type() == String ? r.join('') : r
 }
 
-function OMInputStreamEnd(lst, idx) {
+OMInputStreamEnd = function(lst, idx) {
   this.memo = { }
   this.lst = lst
   this.idx = idx
 }
-OMInputStreamEnd.prototype = objectThatDelegatesTo(OMInputStream.prototype)
+OMInputStreamEnd.prototype = lib.objectThatDelegatesTo(OMInputStream.prototype)
 OMInputStreamEnd.prototype.head = function() { throw fail }
 OMInputStreamEnd.prototype.tail = function() { throw fail }
 
@@ -73,23 +75,23 @@ OMInputStreamEnd.prototype.tail = function() { throw fail }
 Array.prototype.at  = function(idx) { return this[idx] }
 String.prototype.at = String.prototype.charAt
 
-function ListOMInputStream(lst, idx) {
+ListOMInputStream = function(lst, idx) {
   this.memo = { }
   this.lst  = lst
   this.idx  = idx
   this.hd   = lst.at(idx)
 }
-ListOMInputStream.prototype = objectThatDelegatesTo(OMInputStream.prototype)
+ListOMInputStream.prototype = lib.objectThatDelegatesTo(OMInputStream.prototype)
 ListOMInputStream.prototype.head = function() { return this.hd }
 ListOMInputStream.prototype.tail = function() { return this.tl || (this.tl = makeListOMInputStream(this.lst, this.idx + 1)) }
 
-function makeListOMInputStream(lst, idx) { return new (idx < lst.length ? ListOMInputStream : OMInputStreamEnd)(lst, idx) }
+makeListOMInputStream = function(lst, idx) { return new (idx < lst.length ? ListOMInputStream : OMInputStreamEnd)(lst, idx) }
 
 Array.prototype.toOMInputStream  = function() { return makeListOMInputStream(this, 0) }
 String.prototype.toOMInputStream = function() { return makeListOMInputStream(this, 0) }
 
-function makeOMInputStreamProxy(target) {
-  return objectThatDelegatesTo(target, {
+makeOMInputStreamProxy = function(target) {
+  return lib.objectThatDelegatesTo(target, {
     memo:   { },
     target: target,
     tl: undefined,
@@ -98,12 +100,10 @@ function makeOMInputStreamProxy(target) {
 }
 
 // Failer (i.e., that which makes things fail) is used to detect (direct) left recursion and memoize failures
-
-function Failer() { }
-Failer.prototype.used = false
+Failer = function() {};
+Failer.prototype.used = false;
 
 // the OMeta "class" and basic functionality
-
 OMeta = {
   _apply: function(rule) {
     var memoRec = this.input.memo[rule]
@@ -168,11 +168,11 @@ OMeta = {
   memoizeParameterizedRules: function() {
     this._prependInput = function(v) {
       var newInput
-      if (isImmutable(v)) {
-        newInput = this.input[getTag(v)]
+      if (lib.isImmutable(v)) {
+        newInput = this.input[lib.getTag(v)]
         if (!newInput) {
           newInput = new OMInputStream(v, this.input)
-          this.input[getTag(v)] = newInput
+          this.input[lib.getTag(v)] = newInput
         }
       }
       else newInput = new OMInputStream(v, this.input)
@@ -273,7 +273,7 @@ OMeta = {
   _many1: function(x) { return this._many(x, x.call(this)) },
   _form: function(x) {
     var v = this._apply("anything")
-    if (!isSequenceable(v))
+    if (!lib.isSequenceable(v))
       throw fail
     var origInput = this.input
     this.input = v.toOMInputStream()
@@ -347,7 +347,7 @@ OMeta = {
     return this._apply(r)
   },
   foreign: function(g, r) {
-    var gi  = objectThatDelegatesTo(g, {input: makeOMInputStreamProxy(this.input)}),
+    var gi  = lib.objectThatDelegatesTo(g, {input: makeOMInputStreamProxy(this.input)}),
         ans = gi._apply(r)
     this.input = gi.input.target
     return ans
@@ -467,7 +467,7 @@ OMeta = {
     var realArgs = [rule]
     for (var idx = 0; idx < args.length; idx++)
       realArgs.push(args[idx])
-    var m = objectThatDelegatesTo(this, {input: input})
+    var m = lib.objectThatDelegatesTo(this, {input: input})
     m.initialize()
     try { return realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs) }
     catch (f) {
@@ -484,20 +484,35 @@ OMeta = {
     }
   },
   match: function(obj, rule, args, matchFailed) {
-    return this._genericMatch([obj].toOMInputStream(),    rule, args, matchFailed)
-  },
-  matchAll: function(listyObj, rule, args, matchFailed) {
-    return this._genericMatch(listyObj.toOMInputStream(), rule, args, matchFailed)
+    if (lib.isSequenceable(obj)) {
+    	return this._genericMatch(obj.toOMInputStream(), rule, args, matchFailed)
+    } else {
+    	return this._genericMatch([obj].toOMInputStream(), rule, args, matchFailed)    
+    }
   },
   createInstance: function() {
-    var m = objectThatDelegatesTo(this)
+    var m = lib.objectThatDelegatesTo(this)
     m.initialize()
-    m.matchAll = function(listyObj, aRule) {
-      this.input = listyObj.toOMInputStream()
+    m.match = function(obj, aRule) {
+      if (lib.isSequenceable(obj)) {
+      	this.input = obj.toOMInputStream()
+      } else {
+      	this.input = [obj].toOMInputStream()
+      }
       return this._apply(aRule)
     }
     return m
   }
-}
+};
 
-Parser=objectThatDelegatesTo(OMeta);
+// I don't think this is used.
+// Parser=lib.objectThatDelegatesTo(OMeta);
+
+exports.fail = fail;
+exports.OMInputStream = OMInputStream;
+exports.OMInputStreamEnd =OMInputStreamEnd;
+exports.ListOMInputStream = ListOMInputStream;
+exports.makeListOMInputStream = makeListOMInputStream;
+exports.makeOMInputStreamProxy = makeOMInputStreamProxy;
+exports.Failer = Failer;
+exports.OMeta = OMeta;

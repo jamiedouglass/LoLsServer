@@ -14,29 +14,41 @@ var BSOMetaJSParserGrammar = {
 		rules: BSOMetaJSParser.BSOMetaJSTranslator,
 		listInput: false};
 var lang = {
-	name: "OMeta JS", 
-	executableResult: false, 
-	pipe: [
-		BSOMetaJSParserGrammar,
-		BSOMetaJSTranslatorGrammar]};
+		name: "OMeta JS", 
+		executableResult: true, 
+		pipe: [
+			BSOMetaJSParserGrammar,
+			BSOMetaJSTranslatorGrammar]};
 
 var source = "ometa math {\
   expression = term:t space* end           -> t,\
-  term       = term:t \"+\" factor:f         -> Le('Add', t, f)\
-             | term:t \"-\" factor:f         -> Le('Subtract', t, f)\
+  term       = term:t \"+\" factor:f         -> (t + f)\
+             | term:t \"-\" factor:f         -> (t - f)\
              | factor,\
-  factor     = factor:f \"*\" primary:p      -> Le('Multiply', f, p)\
-             | factor:f \"/\" primary:p      -> Le('Divide', f, p)\
+  factor     = factor:f \"*\" primary:p      -> (f * p)\
+             | factor:f \"/\" primary:p      -> (f / p)\
              | primary,\
   primary    = Group\
              | Number,\
-  Group      = \"(\" term:t \")\"              -> Le('Group', t),\
-  Number     = space* digits:n             -> Le('Number', n),\
+  Group      = \"(\" term:t \")\"              -> t,\
+  Number     = space* digits:n             -> n,\
   digits     = digits:n digit:d            -> (n * 10 + d)\
              | digit,\
   digit      = ^digit:d                    -> d.digitValue()\
 }";
 
+var MathGrammar = {
+		name: "Math", 
+		startRule: "expression", 
+		rules: undefined,
+		listInput: true};
+var MathLang = {
+		name: "Math", 
+		executableResult: false, 
+		pipe: [MathGrammar]};
+		
+var problem = "6*7";
+		
 function translateWith(source, lang) {
 	var pipe=lang.pipe, rules, result=source;
 	if (pipe.length==0) return result;
@@ -56,7 +68,7 @@ function translateWith(source, lang) {
 		};
 	};
 	if (lang.executableResult) 
-		eval(result);
+		return eval(result);
 	return result;		
 };
 
@@ -64,9 +76,13 @@ http.createServer(function (req, res) {
   var debug = false;
   if (debug) {
 		ans = translateWith(source, lang);
+		MathGrammar.rules = ans;
+		ans = translateWith(problem, MathLang);
   } else {
 	try {
 		ans = translateWith(source, lang);
+		MathGrammar.rules = ans;
+		ans = translateWith(problem, MathLang);
 	} catch (e) {
 		if (e.errorPos==undefined) {
 			ans = e.toString() + " at unknown postion " + e.errorPos;		
@@ -75,6 +91,7 @@ http.createServer(function (req, res) {
 		}
 	};
   };
+  
 	res.writeHead(200, {'Content-Type': 'text/plain'});
 	res.end('LoLs Parse is ' + ans);
 }).listen(8080);

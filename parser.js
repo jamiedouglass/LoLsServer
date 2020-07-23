@@ -111,7 +111,7 @@ OMeta = {
       var origInput = this.input,
           failer    = new Failer()
       if (this[rule] === undefined)
-        throw 'tried to apply undefined rule "' + rule + '"'
+        throw 'tried to apply undefined rule "' + rule + '" in '+ this.input.idx
       this.input.memo[rule] = failer
       this.input.memo[rule] = memoRec = {ans: this[rule].call(this), nextInput: this.input}
       if (failer.used) {
@@ -484,11 +484,10 @@ OMeta = {
     }
   },
   match: function(obj, rule, args, matchFailed) {
-    if (lib.isSequenceable(obj)) {
-    	return this._genericMatch(obj.toOMInputStream(), rule, args, matchFailed)
-    } else {
-    	return this._genericMatch([obj].toOMInputStream(), rule, args, matchFailed)    
-    }
+    return this._genericMatch([obj].toOMInputStream(),    rule, args, matchFailed)    
+  },
+  matchAll: function(listyObj, rule, args, matchFailed) {
+    return this._genericMatch(listyObj.toOMInputStream(), rule, args, matchFailed)
   },
   createInstance: function() {
     var m = lib.objectThatDelegatesTo(this)

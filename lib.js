@@ -25,7 +25,6 @@ printOn = function(x, ws) {
     ws.nextPutAll(x.toString())
 };
 
-// ?????
 Array.prototype.toString = function() { var ws = "".writeStream(); printOn(this, ws); return ws.contents() };
 
 // delegation
@@ -52,13 +51,11 @@ isImmutable = function(x) {
    return x === null || x === undefined || typeof x === "boolean" || typeof x === "number" || typeof x === "string"
 };
 
-// ????
 String.prototype.digitValue  = function() { return this.charCodeAt(0) - "0".charCodeAt(0) };
 
 isSequenceable = function(x) { return typeof x == "string" || x.constructor === Array };
 
 // some functional programming stuff
-// ?????
 Array.prototype.map = function(f) {
   var r = []
   for (var idx = 0; idx < this.length; idx++)
@@ -93,7 +90,6 @@ ReadStream.prototype.atEnd = function() { return this.pos >= this.src.length };
 ReadStream.prototype.next  = function() { return this.src.at(this.pos++) };
 
 // escape characters
-// ?????
 String.prototype.pad = function(s, len) {
   var r = this
   while (r.length < len)
@@ -143,7 +139,6 @@ unescape = function(s) {
     return s
 };
 
-// ????
 String.prototype.toProgramString = function() {
   var ws = '"'.writeStream()
   for (var idx = 0; idx < this.length; idx++)

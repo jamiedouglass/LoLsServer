@@ -1,4 +1,4 @@
-const lib = require('../lib');
+const lib = require('../../Platform/lib');
 const BSJSParser = require('./bs-js-compiler');
 const BSOMetaParser = require('./bs-ometa-compiler');
 

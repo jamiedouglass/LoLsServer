@@ -1,5 +1,5 @@
-const lib = require('../lib');
-const parser = require('../parser');
+const lib = require('../../Platform/lib');
+const parser = require('../../Platform/parser');
 const BSOMetaParser = require('./bs-ometa-compiler');
 
 {BSNullOptimization=lib.objectThatDelegatesTo(parser.OMeta,{

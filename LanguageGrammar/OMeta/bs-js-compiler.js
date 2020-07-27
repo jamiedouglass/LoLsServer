@@ -1,5 +1,5 @@
-const lib = require('../lib');
-const parser = require('../parser');
+const lib = require('../../Platform/lib');
+const parser = require('../../Platform/parser');
 
 {BSJSParser=lib.objectThatDelegatesTo(parser.OMeta,{
 "space":function(){var $elf=this,_fromIdx=this.input.idx;return this._or((function(){return OMeta._superApplyWithArgs(this,'space')}),(function(){return this._applyWithArgs("fromTo","//","\n")}),(function(){return this._applyWithArgs("fromTo","/*","*/")}))},

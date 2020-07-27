@@ -1,7 +1,7 @@
 const http = require('http');
-const lib = require('./lib');
-const parser=require('./parser');
-const BSOMetaJSParser= require('./OMeta/bs-ometa-js-compiler.js');
+const lib = require('./Platform/lib');
+const parser=require('./Platform/parser');
+const BSOMetaJSParser= require('./LanguageGrammar/OMeta/bs-ometa-js-compiler.js');
 
 var BSOMetaJSParserGrammar = {
 		name: "BSOMetaJSParser", 

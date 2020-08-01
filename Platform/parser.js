@@ -504,9 +504,6 @@ OMeta = {
   }
 };
 
-// I don't think this is used.
-// Parser=lib.objectThatDelegatesTo(OMeta);
-
 exports.fail = fail;
 exports.OMInputStream = OMInputStream;
 exports.OMInputStreamEnd =OMInputStreamEnd;

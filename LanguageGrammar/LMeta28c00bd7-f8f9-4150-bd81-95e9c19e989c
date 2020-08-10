@@ -1,0 +1,9 @@
+{
+	"id": "LMeta28c00bd7-f8f9-4150-bd81-95e9c19e989c",
+	"version": 1596811951335,
+	"name": "OMeta JS",
+	"description": "This is the default Metalanguage for Language of Languages.",
+	"authors": "Alex Wrath, Jamie Douglass",
+	"license": "MIT Open Source 2020",
+	"pipelineIds": []
+}

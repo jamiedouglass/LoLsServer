@@ -17,8 +17,8 @@ var R = {
 	};
 
 class LanguageOfLanguages {
-  	constructor(prefix, props) {
-  		this._id = prefix + LanguageOfLanguages.uuid();
+  	constructor(props) {
+  		this._id = this.prefix + LanguageOfLanguages.uuid();
 		this._version = Date.now();
 		for (var p in props)
     		if (props.hasOwnProperty(p))
@@ -38,6 +38,11 @@ class LanguageOfLanguages {
 		var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
 		return v.toString(16);
 	  });
+	}
+	get filename() {
+		var n=this.name.replace(/[\/|\\:*?"<> ]/g, "-"),
+		    filename=this.prefix + n +'-'+ this.id +'-'+ this.version + this.extension
+		return filename
 	}
  	_id = undefined				// guid for this LoLs item
  	get id() {return this._id}
@@ -81,7 +86,7 @@ class LanguageOfLanguages {
 
 class LoLsLanguage extends LanguageOfLanguages {
   	constructor(props) {
-  		super('L', props=LanguageOfLanguages.readLoLs(props));
+  		super(props=LanguageOfLanguages.readLoLs(props));
 		if (props.hasOwnProperty('pipeLineIds')) {
       		this.pipelineIds = props['pipeLineIds']
       	} 
@@ -90,6 +95,8 @@ class LoLsLanguage extends LanguageOfLanguages {
       			this.pipeline = props['pipeLine']
       	}
     }
+    get prefix() {return 'L'}
+	get extension() {return ''}
 	_pipeline = []
     get pipeline() {return this._pipeline}
 	set pipeline(pipe) {this._pipeline = pipe}   // ????????
@@ -136,11 +143,13 @@ class LoLsLanguage extends LanguageOfLanguages {
 
 class LoLsGrammar extends LanguageOfLanguages {
   	constructor(props) {
-  		super('G', props=LanguageOfLanguages.readLoLs(props));
+  		super(props=LanguageOfLanguages.readLoLs(props));
 		for (var p in props)
     		if (props.hasOwnProperty(p))
       			this[p] = props[p]
     	}
+    get prefix() {return 'G'}
+	get extension() {return ''}
     _status = undefined
     get status() {return this._status}
     _source = undefined 			// source for Grammar
@@ -262,7 +271,8 @@ var G2 = new LoLsGrammar(
 			 outputType: 'text/javascript'});
 G2._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 var MetaLang = new LoLsLanguage(
-	{name: "OMeta JS",
+	{
+	name: "OMeta JS",
 	 pipeline: [
 	 	new LoLsGrammar(
 	 		{startRule: "topLevel",
@@ -274,53 +284,37 @@ var MetaLang = new LoLsLanguage(
 		 	 rules: DefaultMetalanguage.BSOMetaJSTranslator,
 		 	 inputType: "application/javascript",
 			 outputType: 'text/javascript'})]
-	});	
+	});
+ MetaLang._id = DefaultMetalanguageId;
+ MetaLang._version=1596811951335;	
  MetaLang._pipeline= [G1, G2];
-// console.log(JSON.stringify(G1, G1.serializedFields, '\t'));
-// console.log(JSON.stringify(G1, null, '\t'));
-
-// console.log(JSON.stringify(G2, G2.serializedFields, '\t'));
-// console.log(JSON.stringify(G2, null, '\t'));
-
-// console.log(JSON.stringify(MetaLang, MetaLang.serializedFields, '\t'));
-// console.log(JSON.stringify(MetaLang, null, '\t'));
-
 var MathLang = new LoLsGrammar(
 	{name: "Math", 
 	 outputType: 'text/plain'});
-// console.log(JSON.stringify(MathLang, MathLang.serializedFields, '\t'));
-// console.log(JSON.stringify(MathLang, null, '\t'));
-
+MathLang._id="GMath4207537d-43d3-413f-a17b-983761ab0cd2";
+MathLang._version=1596811192837;
 	 
 // temp for testing
 function selectLanguage(id) {
-  if (id == 'Math') {
+  if (id == 'GMath4207537d-43d3-413f-a17b-983761ab0cd2') {
       return MathLang;
   } else {
-  if (id == 'OMeta JS') {
-      return MetaLang;
-  }};
+  	if (id == DefaultMetalanguageId) {
+      	return MetaLang;
+  	}
+  };
   return undefined;
 }
 
-// temp for testing
-function saveInGrammar(source, rules, grammarId) {
-	if (grammarId===undefined)
-		return;
-	MathLang.source = source
-}
 // SERVICES
 // return translation of a source object using a language 
-// new rules for a grammar can be saved 
 app.post('/', (req, res) => {
-   	var source=req.body, languageId=req.query['Language'], grammarId=req.query['SaveIn'];
-   	var language = selectLanguage(languageId), ans;
+   	var ans, source=req.body;
+   	var languageId=req.query['inLanguage'], language = selectLanguage(languageId);
    	if (language === undefined)
-      res.send('""' + languageId + '" not supported."');
+      	res.send('""' + languageId + '" not supported."');
    	try {
 		ans = language.translate(source);
-		if (grammarId !=undefined)
-			saveInGrammar(source, ans, grammarId)
 	} 
 	catch (e) {
 		if (e.errorPos==undefined) {
@@ -330,6 +324,16 @@ app.post('/', (req, res) => {
 		}
    	};
 	res.send('' + ans);
+});
+
+// add a translator source to a grammar  
+app.post('/Grammar/', (req, res) => {
+   	var source=req.body;
+   	var grammarId=req.query['forGrammarId'], grammar = selectLanguage(grammarId);
+   	if (grammar === undefined)
+    	res.send('""' + grammarId + '" grammar not found."'); 
+	grammar.source = source
+	res.send('' + grammar.status);
 });
 
 // retrieve a language resource(s) meeting search criteria

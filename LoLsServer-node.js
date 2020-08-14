@@ -105,6 +105,8 @@ class LanguageOfLanguages {
        		}
 			return result
     	})
+    	// call sequence problem
+    	return {statusCode: 200, message: '' + this.filename + ' file saved'}
 	}
 }
 
@@ -365,7 +367,8 @@ MathLang._id = "GMath4207537d-43d3-413f-a17b-983761ab0cd2";
 // get resource from cashe or load resource from file
 function getLoLsResource(id) {
 // TBD include version number
-// temp for testing-needed 
+// temp for testing-needed
+  if (id == MathLang.id)  
       return MathLang
   if (id == MetaLang.id) 
       return MetaLang
@@ -410,7 +413,7 @@ app.post('/', (req, res) => {
 		} else {
 			ans = e.toString() + " at " + e.errorPos + " " + source.substring(e.errorPos);
 		}
-   	};
+  	};
 	res.send('' + ans);
 });
 

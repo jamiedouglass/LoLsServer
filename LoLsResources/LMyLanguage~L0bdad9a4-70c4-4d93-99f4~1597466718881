@@ -1,0 +1,9 @@
+{
+	"id": "L0bdad9a4-70c4-4d93-99f4",
+	"version": 1597466718881,
+	"name": "My Language",
+	"description": "This is a Language in Language of Languages.",
+	"authors": "Jamie Douglass",
+	"license": "MIT Open Source 2020",
+	"pipelineIds": []
+}

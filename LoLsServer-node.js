@@ -35,12 +35,12 @@ class LanguageOfLanguages {
 		if (pattern.length < 24) 
 			return {statusCode: 400, 
 					message: 'Must be at least 24 characters "'+pattern+'"'};
-		var files = fs.readdirSync(LoLsResources) 
+		var files = fs.readdirSync(LoLsResources) // TBD eliminate sync 
 		var matches = files.filter(file => file.search(pattern) >= 0);
 		if (matches.length == 0) 
 			return {statusCode: 400, 
 					message: 'No resource "'+pattern+'"'};
-		if (matches.length > 1) 
+		if (matches.length > 1)  // TBD select greatest version
 			return {statusCode: 400, 
 					message: ''+matches.length+' resources for "'+pattern+'"'};
 		return {statusCode: 200, message: matches[0]}	
@@ -51,11 +51,11 @@ class LanguageOfLanguages {
 			return props
 		pattern = props['id']
 		if (props.hasOwnProperty('version'))
-			pattern = pattern+'-'+props['version'];
+			pattern = pattern+this.delimiter+props['version'];
 		var ans = LanguageOfLanguages.getResourceFilename(pattern);
 		if (ans['statusCode'] != 200)
 			return ans
-		return fs.readFileSync(LoLsResources + ans['message']);
+		return fs.readFileSync(LoLsResources + ans['message']); // TBD eliminate sync
 	}
 	static uuid() {
 	  return 'xxxxxxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
@@ -64,10 +64,11 @@ class LanguageOfLanguages {
 	  });
 	}
     get delimiter() {return '~'}
+	get key() {return this.id + this.delimiter + this.version}
 	get filename() {
-		var n=this.name.replace(/[^0-9a-z]/gi, ''),
-		    filename = this.prefix+n+this.delimiter+
-		    		   this.id+this.delimiter+this.version+this.extension
+		var name=this.name.replace(/[^0-9a-z]/gi, ''),
+		    filename = this.prefix+name+this.delimiter+
+		    		   this.key+this.extension
 		return filename
 	}
  	_id = undefined				// guid for this LoLs item
@@ -75,7 +76,12 @@ class LanguageOfLanguages {
 	_version = undefined		// Date time stamp number of milliseconds 
 								// that have passed since January 1, 1970.
 	get version() {return this._version}
-	name = "Unnamed"
+	_name = "Unnamed"
+	set name(value) {
+		this._name = value;
+		this._version = Date.now();
+	}
+	get name() {return this._name}
 	description = undefined     // string about this LoLs item
 	authors = undefined			// string listing the names of authors
 	license = undefined			// string with license for this LoLs item
@@ -84,11 +90,12 @@ class LanguageOfLanguages {
 	get age() {return this._age}
 	renewAge() {this._age = Date.now()}
 	isStored() {
-		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => {
+		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => { // fix sync problem
   			if (err) 
     			return false
   			return true
 		})
+		// call sequence problem
 	}
 	get serializedFields () {
 		return ['id','version','name','description','authors','license','website']
@@ -115,13 +122,12 @@ class LanguageOfLanguages {
 
 class LoLsLanguage extends LanguageOfLanguages {
   	constructor(props) {
-  		var myFields;
   		super(props=LanguageOfLanguages.readLoLs(props));
-		if (props.hasOwnProperty('pipeLineIds')) {
+		if (props.hasOwnProperty('pipeLineIds')) {    // use keys
       		this.pipelineIds = props['pipeLineIds']
       	} 
       	else {
-      		if (props.hasOwnProperty('pipeLine')) 
+      		if (props.hasOwnProperty('pipeLine'))    // ?????????
       			this.pipeline = props['pipeLine']
       	}
     }
@@ -130,10 +136,25 @@ class LoLsLanguage extends LanguageOfLanguages {
 	_pipeline = []
     get pipeline() {return this._pipeline}       // ????????
 	set pipeline(pipe) {this._pipeline = pipe}   // ????????
+	get pipelineKeys() {return this._pipeline.map((x) => {return x.key})}
+	set pipelineKeys(keys) {
+		var pipe=[], last = undefined, error = '';
+      	for (var i= 0; i < keys.length; i++) {
+      		pipe[i] = getLoLsResource(keys[i])
+      		if (last != undefined && last.outputType != pipe[i].inputType)
+      			error = error+' '(i-1)+':'+last.outputType+' not '+pipe[i].inputType;
+      		last = pipe[i];
+      	}
+      	if (error != '')	
+      		return 'Pipeline mismatch '+error
+		this._pipeline = pipe;
+	}
+	
+// temp
     get pipelineIds() {return this._pipeline.map((x) => {return x.id})}
 	set pipelineIds(ids) {
 		var pipe=[], props = {id: undefined}, prefix, last = undefined, error = '';
-      	for (var i= 0; i < ids.length-1; i++) {
+      	for (var i= 0; i < ids.length; i++) {
       		props.id = ids[i];
       		prefix = props.id[0];
       		if (prefix == 'L') 
@@ -141,13 +162,15 @@ class LoLsLanguage extends LanguageOfLanguages {
       		else 
       			pipe[i] = new LoLsGrammmar(props)      		
       		if (last != undefined && last.outputType != pipe[i].inputType)
-      			error = error+' '(i-1)+':'+last.outputType+'~'+pipe[i].inputType;
+      			error = error+' '(i-1)+':'+last.outputType+' not '+pipe[i].inputType;
       		last = pipe[i];
       	}
       	if (error != '')	
       		return 'Pipeline mismatch'+error
 		this._pipeline = pipe;
 	}
+// temp
+
 	get inputType() {
 		if (this._pipeline.length == 0)
 			return undefined;
@@ -167,7 +190,7 @@ class LoLsLanguage extends LanguageOfLanguages {
 	}
 	get serializedFields () {
 		var fields = super.serializedFields;
-		return fields.concat(['pipelineIds'])
+		return fields.concat(['pipelineIds'])   // use keys
 	}
 }
 

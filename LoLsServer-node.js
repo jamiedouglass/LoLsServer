@@ -6,13 +6,12 @@ const fs = require('fs');
 
 const lib = require('./Platform/lib');
 const parser=require('./Platform/parser');
-const LoLsPath = './LanguageGrammar/';
-const DefaultMetalanguagePath= LoLsPath + 'OMeta/bs-ometa-js-compiler.js';
+const LoLsBootstrap = './LoLsBootstrap/';
+const LoLsResources ='./LoLsResources/';
+const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
-	DefaultMetalanguageId = 'LMeta28c00bd7-f8f9-4150-bd81-95e9c19e989c';
-    DefaultRuntimeId = 'RMetaee1df5a3-1dae-4905-adc9-5034bf1fa5b9';
-const ResourceCasheSize = 10;
-var resourceCashe = new Array(ResourceCasheSize);
+	DefaultMetalanguageId = 'L28c00bd7-f8f9-4150-bd81';
+    DefaultRuntimeId = 'Ree1df5a3-1dae-4905-adc9';
 
 class LanguageOfLanguages {
   	constructor(props) {
@@ -33,10 +32,10 @@ class LanguageOfLanguages {
       			this[p] = props[p]
     }
 	static getResourceFilename(pattern) {
-		if (pattern.length < 36) 
+		if (pattern.length < 24) 
 			return {statusCode: 400, 
-					message: 'Must be at least 36 characters "'+pattern+'"'};
-		var files = fs.readdirSync(LoLsPath) 
+					message: 'Must be at least 24 characters "'+pattern+'"'};
+		var files = fs.readdirSync(LoLsResources) 
 		var matches = files.filter(file => file.search(pattern) >= 0);
 		if (matches.length == 0) 
 			return {statusCode: 400, 
@@ -56,17 +55,19 @@ class LanguageOfLanguages {
 		var ans = LanguageOfLanguages.getResourceFilename(pattern);
 		if (ans['statusCode'] != 200)
 			return ans
-		return fs.readFileSync(LoLsPath + ans['message']);
+		return fs.readFileSync(LoLsResources + ans['message']);
 	}
 	static uuid() {
-	  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+	  return 'xxxxxxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
 		var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
 		return v.toString(16);
 	  });
 	}
+    get delimiter() {return '~'}
 	get filename() {
-		var n=this.name.replace(/[\/|\\:*?"<> ]/g, "-"),
-		    filename = this.prefix+n+'-'+this.id+'-'+this.version+this.extension
+		var n=this.name.replace(/[^0-9a-z]/gi, ''),
+		    filename = this.prefix+n+this.delimiter+
+		    		   this.id+this.delimiter+this.version+this.extension
 		return filename
 	}
  	_id = undefined				// guid for this LoLs item
@@ -83,7 +84,7 @@ class LanguageOfLanguages {
 	get age() {return this._age}
 	renewAge() {this._age = Date.now()}
 	isStored() {
-		fs.access(LoLsPath + this.filename, fs.F_OK, (err) => {
+		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => {
   			if (err) 
     			return false
   			return true
@@ -95,13 +96,15 @@ class LanguageOfLanguages {
 	store(replace) {
 		var result;
 		if (this.isStored() && replace != true)
-			return {statusCode: 400, message: '' + this.filename + ' file already exists'};
+			return {statusCode: 400, message: '' + this.filename +
+					' file already exists'};
 		var data = JSON.stringify(this, this.serializedFields, '\t');
-		fs.writeFile(LoLsPath + this.filename, data, (err) => {
+		fs.writeFile(LoLsResources + this.filename, data, (err) => {
     		if (err) {
     			result = {statusCode: 400, message: '' + err}
        		} else {
-    			result = {statusCode: 200, message: '' + this.filename + ' file saved'}
+    			result = {statusCode: 200, message: '' + this.filename +
+    					  ' file saved'}
        		}
 			return result
     	})
@@ -211,7 +214,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 	outputType = 'text/javascript'
 	_rulesSource = undefined		// string with sources of rules
 	get rulesSource() {return this._rulesSource}
-	_rules = undefined				// rule name keys with functions executes each rule
+	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
 	set metalanguage(value) {
 		if (value === undefined)
@@ -228,7 +231,8 @@ class LoLsGrammar extends LanguageOfLanguages {
 			if (e.errorPos==undefined) {
 				this._status = e.toString() + " at unknown postion " + e.errorPos;		
 			} else {
-				this._status = e.toString() + " at " + e.errorPos + " " + source.substring(e.errorPos);
+				this._status = e.toString() + " at " + e.errorPos + 
+								" " + source.substring(e.errorPos);
 			}
 			this._rulesSource = undefined;
 		}
@@ -358,12 +362,14 @@ MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 var MathLang = new LoLsGrammar(
 	{
-	//id: "GMath4207537d-43d3-413f-a17b-983761ab0cd2",
+	//id: "G4207537d-43d3-413f-9837",
 	 version: 1596811192837,
 	 name: "Math", 
 	 outputType: 'text/plain'});
-MathLang._id = "GMath4207537d-43d3-413f-a17b-983761ab0cd2";
-	 
+MathLang._id = "G4207537d-43d3-413f-9837";
+
+const ResourceCasheSize = 10;
+var resourceCashe = new Array(ResourceCasheSize);	 
 // get resource from cashe or load resource from file
 function getLoLsResource(id) {
 // TBD include version number
@@ -411,7 +417,8 @@ app.post('/', (req, res) => {
 		if (e.errorPos==undefined) {
 			ans = e.toString() + " at unknown postion " + e.errorPos;		
 		} else {
-			ans = e.toString() + " at " + e.errorPos + " " + source.substring(e.errorPos);
+			ans = e.toString() + " at " + e.errorPos + " " +
+				  source.substring(e.errorPos);
 		}
   	};
 	res.send('' + ans);
@@ -432,7 +439,7 @@ app.post('/Grammar/', (req, res) => {
 // retrieve a language resource(s) meeting search criteria
 app.get('/', (req, res) => {
 	var pattern=req.body, matches;
-	fs.readdir(LoLsPath, (err, files) => {
+	fs.readdir(LoLsResources, (err, files) => {
 		matches = files.filter(file => file.search(pattern) >= 0)
 		res.send(matches);
 	})
@@ -467,12 +474,12 @@ app.put('/Grammar/', (req, res) => {
 // remove a language or grammar resource
 app.delete('/', (req, res) => {
 	var pattern=req.body, matches;
-	if (pattern.length < 36) {
+	if (pattern.length < 24) {
 		res.statusCode = 400;
-		res.send('Must be at least 36 characters "' + pattern + '"');
+		res.send('Must be at least 24 characters "' + pattern + '"');
 		return		
 	};
-	fs.readdir(LoLsPath, (err, files) => {
+	fs.readdir(LoLsResources, (err, files) => {
 		matches = files.filter(file => file.search(pattern) >= 0);
 		if (matches.length == 0) {
 			res.statusCode = 400;
@@ -484,7 +491,7 @@ app.delete('/', (req, res) => {
 			res.send('' + matches.length + ' resources for "' + pattern + '"');	
 			return	
 		}	
-		fs.unlink(LoLsPath + matches[0], function (err) { 
+		fs.unlink(LoLsResources + matches[0], function (err) { 
 			if (err) {
 				res.statusCode = 400;
 				res.send('' + err)

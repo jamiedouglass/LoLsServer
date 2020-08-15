@@ -1,0 +1,16 @@
+{
+	"id": "Gad180a96-e81f-4137-8d67",
+	"version": 1597463368898,
+	"name": "Math",
+	"description": "This is a Math Grammar in Language of Languages.",
+	"authors": "Jamie Douglass",
+	"license": "MIT Open Source 2020",
+	"status": "ready",
+	"source": "ometa math {expression = space* end}",
+	"startRule": "expression",
+	"rulesSource": "math=objectThatDelegatesTo(OMeta,{\n\"expression\":function(){var $elf=this,_fromIdx=this.input.idx;return (function(){this._many((function(){return this._apply(\"space\")}));return this._apply(\"end\")}).call(this)}})",
+	"inputType": "text/plain",
+	"outputType": "text/plain",
+	"metalanguageId": "L28c00bd7-f8f9-4150-bd81",
+	"runtimeId": "Rb6eaf758-7105-4eed-84c7"
+}

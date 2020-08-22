@@ -1,0 +1,12 @@
+{
+	"name": "Bootstrap OMeta JS Parser",
+	"key": "Gb7dfe16e-612c-483f-bbe0~1597634061086",
+	"description": "This Grammar compiling OMeta JS source code.",
+	"authors": "Alex Wrath, Jamie Douglass",
+	"license": "MIT Open Source 2020",
+	"source": "DefaultMetalanguage.BSOMetaJSParser",
+	"startRule": "topLevel",
+	"inputType": "text/plain",
+	"outputType": "application/javascript",
+	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSParser\"]"
+}

@@ -1,0 +1,12 @@
+{
+	"name": "Bootstrap OMeta JS Translator",
+	"key": "Gb74fe8f4-dca3-41d4-b0e1~1597634061086",
+	"description": "This Grammar translates OMeta JS intermeditate code to execution form.",
+	"authors": "Alex Wrath, Jamie Douglass",
+	"license": "MIT Open Source 2020",
+	"source": "DefaultMetalanguage.BSOMetaJSTranslator",
+	"startRule": "trans",
+	"inputType": "application/javascript",
+	"outputType": "text/javascript",
+	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSTranslator\"]"
+}

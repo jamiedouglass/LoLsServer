@@ -15,47 +15,26 @@ var DefaultMetalanguage = require(DefaultMetalanguagePath),
 
 class LanguageOfLanguages {
   	constructor(props) {
-  		if (props === undefined)
-  			return undefined
-  		if (props.hasOwnProperty('id')) {
-  			this._id = props['id'];
-  			delete props.id;
-  		} else {
-  			this._id = this.prefix + LanguageOfLanguages.uuid()};
-  		if (props.hasOwnProperty('version')) {
-  			this._version = props['version'];
-  			delete props.version;
-  		} else {
-			this._version = Date.now()};
-		for (var p in props)
-    		if (props.hasOwnProperty(p))
+  		this._id = this.prefix + LanguageOfLanguages.uuid();
+		this._version = Date.now();
+		var fields = LanguageOfLanguages.mySerializedFields();	
+		for (var p in props) { 
+    		if (fields.includes(p) && props.hasOwnProperty(p)) {
       			this[p] = props[p]
+      		}
+      	}
+      	if (fields.includes('key') && props.hasOwnProperty('key')) {
+      		this.key = props.key
+      	}
     }
-	static getResourceFilename(pattern) {
-		if (pattern.length < 24) 
-			return {statusCode: 400, 
-					message: 'Must be at least 24 characters "'+pattern+'"'};
-		var files = fs.readdirSync(LoLsResources) // TBD eliminate sync 
-		var matches = files.filter(file => file.search(pattern) >= 0);
-		if (matches.length == 0) 
-			return {statusCode: 400, 
-					message: 'No resource "'+pattern+'"'};
-		if (matches.length > 1)  // TBD select greatest version
-			return {statusCode: 400, 
-					message: ''+matches.length+' resources for "'+pattern+'"'};
-		return {statusCode: 200, message: matches[0]}	
+	static mySerializedFields () {
+		return ['name','key','description','authors','license','website']
 	}
-	static readLoLs(props) {
-		var pattern;
-		if (!props.hasOwnProperty('id')) 
-			return props
-		pattern = props['id']
-		if (props.hasOwnProperty('version'))
-			pattern = pattern+this.delimiter+props['version'];
-		var ans = LanguageOfLanguages.getResourceFilename(pattern);
-		if (ans['statusCode'] != 200)
-			return ans
-		return fs.readFileSync(LoLsResources + ans['message']); // TBD eliminate sync
+	get serializedFields () {
+		return LanguageOfLanguages.mySerializedFields()
+	}
+	get serialize() {
+		return JSON.stringify(this, this.serializedFields, '\t');
 	}
 	static uuid() {
 	  return 'xxxxxxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
@@ -64,18 +43,22 @@ class LanguageOfLanguages {
 	  });
 	}
     get delimiter() {return '~'}
-	get key() {return this.id + this.delimiter + this.version}
+	get extension() {return ''}
 	get filename() {
-		var name=this.name.replace(/[^0-9a-z]/gi, ''),
-		    filename = this.prefix+name+this.delimiter+
-		    		   this.key+this.extension
-		return filename
+		var name=this.name.replace(/[^0-9a-z]/gi, '');
+		return this.prefix+name+this.delimiter+this.key+this.extension
 	}
- 	_id = undefined				// guid for this LoLs item
+ 	_id = undefined				// prefix character + guid for this LoLs item
  	get id() {return this._id}
 	_version = undefined		// Date time stamp number of milliseconds 
 								// that have passed since January 1, 1970.
 	get version() {return this._version}
+	set key(value) {
+		var a = value.split(this.delimiter);
+		this._id = a[0];
+		this._version = Number(a[1]);
+	}
+	get key() {return this.id + this.delimiter + this.version}
 	_name = "Unnamed"
 	set name(value) {
 		this._name = value;
@@ -89,58 +72,84 @@ class LanguageOfLanguages {
 	_age = Date.now()
 	get age() {return this._age}
 	renewAge() {this._age = Date.now()}
-	isStored() {
-		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => { // fix sync problem
-  			if (err) 
-    			return false
-  			return true
+	
+	static load(key, callback) {
+		var data, lolsClass, 
+			lolsClasses = {'L': LoLsLanguage, 'G': LoLsGrammar, 'R': LoLsRuntime};
+console.log(key);
+		LanguageOfLanguages.getResourceFilename(key, (filename) => {
+console.log(filename);
+			 if (filename == undefined)
+				callback(undefined)
+			 else {
+			 	fs.readFile(LoLsResources + filename, data, (err) => {
+			 		if (err)
+			 			callback(undefined)
+			 		else {
+			 			lolsClass = lolsClasses[file[0]];
+			 			if (lolsClass == undefined)
+			 				callback(undefined)
+			 			else
+			 				callback(new lolsClass(data))
+			 		}
+			 	})
+			 }
+		})	
+	}
+	static getResourceFilename(pattern, callback) {
+		fs.readdir(LoLsResources, (files, err) => {
+			if (err)
+				callback(undefined)
+			else {
+				var matches = files.filter(file => file.search(pattern) >= 0), c=0, p, a;
+				for (var f in matches) {
+					p = f.split(this.delimiter);
+					p = new Number(p[2]);
+					if (p >= c)
+						a = f
+				}
+				callback(a);
+			}
+		}) 
+	}
+	isStored(callback) {
+		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => { 
+			if (err) 
+				callback(false)
+			else
+			  	callback(true)
 		})
-		// call sequence problem
 	}
-	get serializedFields () {
-		return ['id','version','name','description','authors','license','website']
-	}
-	store(replace) {
-		var result;
-		if (this.isStored() && replace != true)
-			return {statusCode: 400, message: '' + this.filename +
-					' file already exists'};
-		var data = JSON.stringify(this, this.serializedFields, '\t');
-		fs.writeFile(LoLsResources + this.filename, data, (err) => {
-    		if (err) {
-    			result = {statusCode: 400, message: '' + err}
-       		} else {
-    			result = {statusCode: 200, message: '' + this.filename +
-    					  ' file saved'}
-       		}
-			return result
-    	})
-    	// call sequence problem
-    	return {statusCode: 200, message: '' + this.filename + ' file saved'}
+	store(replace, callback) {
+		var writeIfExists = replace == true ? 'w' : 'wx';
+		fs.writeFile(LoLsResources + this.filename, this.serialize, 
+					{flag: writeIfExists}, callback)
 	}
 }
 
 class LoLsLanguage extends LanguageOfLanguages {
   	constructor(props) {
-  		super(props=LanguageOfLanguages.readLoLs(props));
-		if (props.hasOwnProperty('pipeLineIds')) {    // use keys
-      		this.pipelineIds = props['pipeLineIds']
-      	} 
-      	else {
-      		if (props.hasOwnProperty('pipeLine'))    // ?????????
-      			this.pipeline = props['pipeLine']
-      	}
+  		super(props);
+		var fields = LoLsLanguage.mySerializedFields();	
+		for (var p in props) 
+    		if (fields.includes(p) && props.hasOwnProperty(p))
+      			this[p] = props[p]
     }
-    get prefix() {return 'L'}
-	get extension() {return ''}
+	static mySerializedFields () {
+		return ['pipelineKeys'] 
+	}
+	get serializedFields () {
+		var fields = super.serializedFields;
+		return fields.concat(LoLsLanguage.mySerializedFields()) 
+	}
+	get prefix() {return 'L'}
 	_pipeline = []
-    get pipeline() {return this._pipeline}       // ????????
-	set pipeline(pipe) {this._pipeline = pipe}   // ????????
-	get pipelineKeys() {return this._pipeline.map((x) => {return x.key})}
 	set pipelineKeys(keys) {
 		var pipe=[], last = undefined, error = '';
       	for (var i= 0; i < keys.length; i++) {
-      		pipe[i] = getLoLsResource(keys[i])
+      		getLoLsResource(keys[i], (gram) => {
+      			pipe[i] = gram;
+      		});
       		if (last != undefined && last.outputType != pipe[i].inputType)
       			error = error+' '(i-1)+':'+last.outputType+' not '+pipe[i].inputType;
       		last = pipe[i];
@@ -149,28 +158,8 @@ class LoLsLanguage extends LanguageOfLanguages {
       		return 'Pipeline mismatch '+error
 		this._pipeline = pipe;
 	}
+	get pipelineKeys() {return this._pipeline.map((x) => {return x.key})}
 	
-// temp
-    get pipelineIds() {return this._pipeline.map((x) => {return x.id})}
-	set pipelineIds(ids) {
-		var pipe=[], props = {id: undefined}, prefix, last = undefined, error = '';
-      	for (var i= 0; i < ids.length; i++) {
-      		props.id = ids[i];
-      		prefix = props.id[0];
-      		if (prefix == 'L') 
-      			pipe[i] = new LoLsLanguage(props)
-      		else 
-      			pipe[i] = new LoLsGrammmar(props)      		
-      		if (last != undefined && last.outputType != pipe[i].inputType)
-      			error = error+' '(i-1)+':'+last.outputType+' not '+pipe[i].inputType;
-      		last = pipe[i];
-      	}
-      	if (error != '')	
-      		return 'Pipeline mismatch'+error
-		this._pipeline = pipe;
-	}
-// temp
-
 	get inputType() {
 		if (this._pipeline.length == 0)
 			return undefined;
@@ -188,29 +177,27 @@ class LoLsLanguage extends LanguageOfLanguages {
 		}
 		return result;
 	}
-	get serializedFields () {
-		var fields = super.serializedFields;
-		return fields.concat(['pipelineIds'])   // use keys
-	}
 }
 
 class LoLsGrammar extends LanguageOfLanguages {
   	constructor(props) {
-  		super(props=LanguageOfLanguages.readLoLs(props));
-  		if (props.hasOwnProperty('status')) {
-  			this._status = props['status'];
-  			delete props.status;
-  		};
-  		if (props.hasOwnProperty('rulesSource')) {
-  			this._rulesSource = props['rulesSource'];
-  			delete props.rulesSource;
-  		};
-		for (var p in props)
-    		if (props.hasOwnProperty(p))
+  		super(props);
+		var fields = LoLsGrammar.mySerializedFields();	
+		for (var p in props) 
+    		if (fields.includes(p) && props.hasOwnProperty(p))
       			this[p] = props[p]
-    	}
+    }
+	static mySerializedFields () {
+		return ['source','startRule',
+				'inputType','outputType','rulesSource',
+				'metalanguageId','runtimeId']
+	}
+	get serializedFields () {
+		var fields = super.serializedFields;
+		return fields.concat(LoLsGrammar.mySerializedFields())
+	}
+	
     get prefix() {return 'G'}
-	get extension() {return ''}
     _status = undefined
     get status() {return this._status}
     _source = undefined 			// source for Grammar
@@ -261,15 +248,15 @@ class LoLsGrammar extends LanguageOfLanguages {
 		}
 		return this.status
 	}  
-	set metalanguageId(id) {
-		if (MetaLang.id == id)
+	set metalanguageKey(key) {
+		if (MetaLang.key == key)
 			return this._metalanguage = MetaLang
 		this._metalanguage = MetaLang   // temp needs to load from file
 	}
-	get metalanguageId() {
+	get metalanguageKey() {
 		if (this._metalanguage == undefined)
 			return undefined
-		return this._metalanguage.id
+		return this._metalanguage.key
 	}
 	_runtime = R  					// metalanguage runtime environment
 	set runtime(value) {
@@ -289,12 +276,12 @@ class LoLsGrammar extends LanguageOfLanguages {
 		}
 		return this.status
 	}
-	set runtimeId(id) {
-		if (R.id == id)
+	set runtimeKey(key) {
+		if (R.key == key)
 			return this.runtime = R
 		this.runtime = R				// temp needs to load from file
 	}
-	get runtimeId() {return this._runtime.id}	
+	get runtimeKey() {return this._runtime.key}	
 	translate(sourceInput) {
 		var result;
 		if (this.startRule === undefined || this._rules === undefined)
@@ -313,37 +300,18 @@ class LoLsGrammar extends LanguageOfLanguages {
 		};
 		return result;
 	}
-	get serializedFields () {
-		var fields = super.serializedFields;
-		return fields.concat(['status','source','startRule','rulesSource',
-							  'inputType','outputType',
-							  'metalanguageId','runtimeId' ])
-	}
 }
 
 class LoLsRuntime extends LanguageOfLanguages {
   	constructor(props) {
-  		super(props=LanguageOfLanguages.readLoLs(props));
-  		if (props.hasOwnProperty('status')) {
-  			this._status = props['status'];
-  			delete props.status;
-  		};
-  		if (props.hasOwnProperty('rulesSource')) {
-  			this._rulesSource = props['rulesSource'];
-  			delete props.rulesSource;
-  		};
-		for (var p in props)
-    		if (props.hasOwnProperty(p))
+  		super(props)
+		var fields = LoLsRuntime.mySerializedFields();	
+		for (var p in props) 
+    		if (fields.includes(p) && props.hasOwnProperty(p))
       			this[p] = props[p]
-    	}
-    get prefix() {return 'R'}
+    }
+    static mySerializedFields() {return []}
 	get extension() {return '.js'}
-/*
-	get serializedFields () {
-		var fields = super.serializedFields;
-		return fields.concat([])
-	}
-*/
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
@@ -365,7 +333,7 @@ G2._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 var MetaLang = new LoLsLanguage(
 	{
 	//id: DefaultMetalanguageId,
-	 version: 1596811951335,
+	 //version: 1596811951335,
 	 name: "OMeta JS",
 	 pipeline: [
 	 	new LoLsGrammar(
@@ -380,90 +348,111 @@ var MetaLang = new LoLsLanguage(
 			 outputType: 'text/javascript'})]
 	});
 MetaLang._id = DefaultMetalanguageId;
+MetaLang._version = 1596811951335;
 MetaLang._pipeline= [G1, G2];
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 var MathLang = new LoLsGrammar(
 	{
 	//id: "G4207537d-43d3-413f-9837",
-	 version: 1596811192837,
+	// version: 1596811192837,
 	 name: "Math", 
 	 outputType: 'text/plain'});
 MathLang._id = "G4207537d-43d3-413f-9837";
+MathLang._version = 1596811192837;
 
 const ResourceCasheSize = 10;
 var resourceCashe = new Array(ResourceCasheSize);	 
 // get resource from cashe or load resource from file
-function getLoLsResource(id) {
-// TBD include version number
+function getLoLsResource(key, callback) {
 // temp for testing-needed
-  if (id == MathLang.id)  
-      return MathLang
-  if (id == MetaLang.id) 
-      return MetaLang
-  return undefined
-// end of temp code
-  var oldest = 0, oldestAge = Date.now();
-  for (var i=0; i<ResourceCasheSize; i++) {
-  	if (resourceCashe[i] != undefined) {
-  		if (rescourceCashe[i].id == id) {
-  			rescourceCashe[i].renewAge();
-  			return resourceCashe[i]
-  		}
-  		if (resourceCashe[i].age < oldestAge) {
-  			oldest = i;
-  			oldestAge = resourceCashe[i].age;
-  		} else {
-  		// load resource id into i index
-  		}
-  	} else {
-  		oldest = i;
-  		break
-  	}
-  }
-  // store resource currently in oldest index if defined
-  // load resource id into oldest index
-  return resourceCashe[oldest]
+	var resource = undefined;
+	if (key == MathLang.key) {  
+		return callback(resource = MathLang)
+	} 
+	if (key == MetaLang.key) {
+    	return callback(resource = MetaLang)
+    }
+//  	return resource
+// end of temp code */
+	var oldest = 0, oldestAge = Date.now();
+	for (var i=0; i < ResourceCasheSize; i++) {
+		if (resourceCashe[i] != undefined) {
+			if (rescourceCashe[i].key == key) {
+				rescourceCashe[i].renewAge();
+				return callback(resourceCashe[i]);
+			}
+			if (resourceCashe[i].age < oldestAge) {
+				oldest = i;
+				oldestAge = resourceCashe[i].age;
+			}
+		} else {
+			LanguageOfLanguages.load(key, (lolsRes) => {
+				resourceCashe[i] = lolsRes;
+				lolsRes.renewAge();
+				callback(resourceCashe[i]);
+				return;			
+			});
+		}
+	}
+	resourceCashe[oldest].store(true, (err) => {
+		if (err) {
+    			res.statusCode = 400;
+    			res.send('page out failed ' + err);
+		} else {
+			// load resource key into oldest index
+			LanguageOfLanguages.load(key, (lolsRes) => {
+			resourceCashe[oldest] = lolsRes;
+			lolsRes.renewAge();
+			callback(resourceCashe[oldest]);			
+			})
+		}
+	})
 }
 
 // SERVICES
 // return translation of a source object using a language 
 app.post('/', (req, res) => {
-   	var ans, source=req.body;
-   	var languageId=req.query['inLanguage'], language = getLoLsResource(languageId);
-   	if (language === undefined)
-      	res.send('"' + languageId + '" not supported.');
-   	try {
-		ans = language.translate(source);
-	} 
-	catch (e) {
-		if (e.errorPos==undefined) {
-			ans = e.toString() + " at unknown postion " + e.errorPos;		
-		} else {
-			ans = e.toString() + " at " + e.errorPos + " " +
-				  source.substring(e.errorPos);
+   	var source=req.body, languageKey=req.query['inLanguage'];
+   	getLoLsResource(languageKey, (language) => {
+		if (language === undefined) {
+			res.send('"' + languageKey + '" not supported.');
+			return;
 		}
-  	};
-	res.send('' + ans);
+		var ans;	
+		try {
+			ans = language.translate(source);
+		} catch (e) {
+			if (e.errorPos==undefined) {
+				ans = e.toString() + " at unknown postion " + e.errorPos;		
+			} else {
+				ans = e.toString() + " at " + e.errorPos + " " +
+					  source.substring(e.errorPos);
+			}
+		};
+		res.send('' + ans)
+   	});
 });
 
 // add a translator source to a grammar  
 app.post('/Grammar/', (req, res) => {
    	var source=req.body;
-   	var grammarId=req.query['forGrammar'], grammar = getLoLsResource(grammarId);
-   	if (grammar === undefined) {
-    	res.send('""' + grammarId + '" grammar not found."'); 
-	} else {
-		grammar.source = source
-		res.send('' + grammar.status);
-	}	
+   	var grammarKey=req.query['forGrammar'];
+   	getLoLsResource(grammarKey, (grammar) => {
+		if (grammar === undefined) {
+			res.send('""' + grammarKey + '" grammar not found."'); 
+		} else {
+			grammar.source = source;
+			res.send('' + grammar.status);
+		}			
+   	});
 });
 
 // retrieve a language resource(s) meeting search criteria
 app.get('/', (req, res) => {
-	var pattern=req.body, matches;
 	fs.readdir(LoLsResources, (err, files) => {
-		matches = files.filter(file => file.search(pattern) >= 0)
+		var pattern=req.body, 
+			matches = files.filter(file => file.search(pattern) >= 0);
 		res.send(matches);
 	})
 });
@@ -472,9 +461,15 @@ app.get('/', (req, res) => {
 app.put('/Language/', (req, res) => {
 	var language = new LoLsLanguage(req.body);
 	if (language != undefined) {
-		var result = language.store(res);
-		res.statusCode = result.statusCode;
-		res.send(result.message); 
+		language.store(false, (err) => {
+    		if (err) {
+    			res.statusCode = 400;
+    			res.send('' + err);
+       		} else {
+    			res.statusCode = 200;
+    			res.send('' + language.filename + ' file saved');
+       		}
+    	});
 	} else {
 		res.statusCode = 400;
 		res.send('Unable to create Language');
@@ -485,9 +480,15 @@ app.put('/Language/', (req, res) => {
 app.put('/Grammar/', (req, res) => {
 	var grammar = new LoLsGrammar(req.body);
 	if (grammar != undefined) {
-		var result = grammar.store(res);
-		res.statusCode = result.statusCode;
-		res.send(result.message); 
+		grammar.store(false, (err) => {
+    		if (err) {
+    			res.statusCode = 400;
+    			res.send('' + err);
+       		} else {
+    			res.statusCode = 200;
+    			res.send('' + grammar.filename + ' file saved');
+       		}
+    	});
 	} else {
 		res.statusCode = 400;
 		res.send('Unable to create Grammar');
@@ -496,33 +497,15 @@ app.put('/Grammar/', (req, res) => {
 
 // remove a language or grammar resource
 app.delete('/', (req, res) => {
-	var pattern=req.body, matches;
-	if (pattern.length < 24) {
-		res.statusCode = 400;
-		res.send('Must be at least 24 characters "' + pattern + '"');
-		return		
-	};
-	fs.readdir(LoLsResources, (err, files) => {
-		matches = files.filter(file => file.search(pattern) >= 0);
-		if (matches.length == 0) {
+	var filename=req.body;
+	fs.unlink(LoLsResources + filename, function (err) { 
+		if (err) {
 			res.statusCode = 400;
-			res.send('No resource "' + pattern + '"');
-			return		
-		}
-		if (matches.length > 1) {
-			res.statusCode = 400;
-			res.send('' + matches.length + ' resources for "' + pattern + '"');	
-			return	
-		}	
-		fs.unlink(LoLsResources + matches[0], function (err) { 
-			if (err) {
-				res.statusCode = 400;
-				res.send('' + err)
-			} else {
-				res.statusCode = 200;
-				res.send('Deleted ' + pattern);
-			}
-		});
+			res.send('' + err)
+		} else {
+			res.statusCode = 200;
+			res.send('Deleted ' + filename);
+		};
 	});
 });
 

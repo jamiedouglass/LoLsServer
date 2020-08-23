@@ -10,8 +10,9 @@ const LoLsBootstrap = './LoLsBootstrap/';
 const LoLsResources ='./LoLsResources/';
 const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
-	DefaultMetalanguageId = 'L28c00bd7-f8f9-4150-bd81';
-    DefaultRuntimeId = 'Ree1df5a3-1dae-4905-adc9';
+	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1596811951335', MetaLang,
+    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9-5034bf1fa5b9~1596811949469', R;
+var DefaultMathlanguageKey = 'G4207537d-43d3-413f-9837~1596811192837', MathLang;
 
 class LanguageOfLanguages {
   	constructor(props) {
@@ -76,37 +77,35 @@ class LanguageOfLanguages {
 	static load(key, callback) {
 		var data, lolsClass, 
 			lolsClasses = {'L': LoLsLanguage, 'G': LoLsGrammar, 'R': LoLsRuntime};
-console.log(key);
 		LanguageOfLanguages.getResourceFilename(key, (filename) => {
-console.log(filename);
 			 if (filename == undefined)
 				callback(undefined)
 			 else {
-			 	fs.readFile(LoLsResources + filename, data, (err) => {
+			 	fs.readFile(LoLsResources + filename, (err, data) => {
 			 		if (err)
 			 			callback(undefined)
 			 		else {
-			 			lolsClass = lolsClasses[file[0]];
+			 			lolsClass = lolsClasses[filename[0]];
 			 			if (lolsClass == undefined)
 			 				callback(undefined)
 			 			else
-			 				callback(new lolsClass(data))
+			 				callback(new lolsClass(JSON.parse(data)))
 			 		}
 			 	})
 			 }
 		})	
 	}
 	static getResourceFilename(pattern, callback) {
-		fs.readdir(LoLsResources, (files, err) => {
+		fs.readdir(LoLsResources, (err, files) => {
 			if (err)
 				callback(undefined)
 			else {
 				var matches = files.filter(file => file.search(pattern) >= 0), c=0, p, a;
-				for (var f in matches) {
-					p = f.split(this.delimiter);
+				for (var i=0; i< matches.length; i++) {
+					p = matches[i].split('~');
 					p = new Number(p[2]);
 					if (p >= c)
-						a = f
+						a = matches[i]
 				}
 				callback(a);
 			}
@@ -205,7 +204,6 @@ class LoLsGrammar extends LanguageOfLanguages {
     	this._source = value
 		this.metalanguage = this._metalanguage
 		this.runtime = this._runtime
-
     }
     get source() {return this._source}
 	_startRule = undefined			// string key from rules
@@ -223,6 +221,10 @@ class LoLsGrammar extends LanguageOfLanguages {
 	inputType = 'text/plain'
 	outputType = 'text/javascript'
 	_rulesSource = undefined		// string with sources of rules
+	set rulesSource(value) {
+		this._rulesSource = value;
+		this.runtime = this._runtime
+	}
 	get rulesSource() {return this._rulesSource}
 	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
@@ -315,7 +317,6 @@ class LoLsRuntime extends LanguageOfLanguages {
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
-var R = new LoLsRuntime({});
 
 var G1 = new LoLsGrammar(
 	 		{startRule: "topLevel",
@@ -332,8 +333,6 @@ G2._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 
 var MetaLang = new LoLsLanguage(
 	{
-	//id: DefaultMetalanguageId,
-	 //version: 1596811951335,
 	 name: "OMeta JS",
 	 pipeline: [
 	 	new LoLsGrammar(
@@ -347,40 +346,39 @@ var MetaLang = new LoLsLanguage(
 		 	 inputType: "application/javascript",
 			 outputType: 'text/javascript'})]
 	});
-MetaLang._id = DefaultMetalanguageId;
-MetaLang._version = 1596811951335;
+MetaLang.key=DefaultMetalanguageKey;	
 MetaLang._pipeline= [G1, G2];
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-var MathLang = new LoLsGrammar(
-	{
-	//id: "G4207537d-43d3-413f-9837",
-	// version: 1596811192837,
-	 name: "Math", 
-	 outputType: 'text/plain'});
-MathLang._id = "G4207537d-43d3-413f-9837";
-MathLang._version = 1596811192837;
 
 const ResourceCasheSize = 10;
-var resourceCashe = new Array(ResourceCasheSize);	 
+var resourceCashe = new Array(ResourceCasheSize);
+resourceCashe[0] = MetaLang;
+
+/*
+getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
+	MetaLang = lolRes;
+});
+*/
+getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
+	MathLang = lolRes;
+});
+R = new LoLsRuntime({});
+/*
+getLoLsResource(DefaultRuntimeKey, (lolRes) => {
+	R = lolRes;
+});
+*/
+
 // get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
-// temp for testing-needed
-	var resource = undefined;
-	if (key == MathLang.key) {  
-		return callback(resource = MathLang)
-	} 
-	if (key == MetaLang.key) {
-    	return callback(resource = MetaLang)
-    }
-//  	return resource
-// end of temp code */
 	var oldest = 0, oldestAge = Date.now();
 	for (var i=0; i < ResourceCasheSize; i++) {
 		if (resourceCashe[i] != undefined) {
-			if (rescourceCashe[i].key == key) {
-				rescourceCashe[i].renewAge();
-				return callback(resourceCashe[i]);
+			if (resourceCashe[i].key == key) {
+				resourceCashe[i].renewAge();
+				callback(resourceCashe[i]);
+				return;
 			}
 			if (resourceCashe[i].age < oldestAge) {
 				oldest = i;
@@ -391,8 +389,8 @@ function getLoLsResource(key, callback) {
 				resourceCashe[i] = lolsRes;
 				lolsRes.renewAge();
 				callback(resourceCashe[i]);
-				return;			
-			});
+			});	
+			return;			
 		}
 	}
 	resourceCashe[oldest].store(true, (err) => {

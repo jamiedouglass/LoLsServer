@@ -313,7 +313,6 @@ class LoLsRuntime extends LanguageOfLanguages {
       			this[p] = props[p]
     }
     static mySerializedFields() {return []}
-	get extension() {return '.js'}
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
@@ -357,18 +356,21 @@ resourceCashe[0] = MetaLang;
 
 /*
 getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load default metalanguage.')
 	MetaLang = lolRes;
 });
 */
 getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load example Math grammar.')
 	MathLang = lolRes;
 });
-R = new LoLsRuntime({});
-/*
 getLoLsResource(DefaultRuntimeKey, (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load default runtime')
 	R = lolRes;
 });
-*/
 
 // get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
@@ -387,7 +389,8 @@ function getLoLsResource(key, callback) {
 		} else {
 			LanguageOfLanguages.load(key, (lolsRes) => {
 				resourceCashe[i] = lolsRes;
-				lolsRes.renewAge();
+				if (lolsRes != undefined) 
+					lolsRes.renewAge();
 				callback(resourceCashe[i]);
 			});	
 			return;			
@@ -401,7 +404,8 @@ function getLoLsResource(key, callback) {
 			// load resource key into oldest index
 			LanguageOfLanguages.load(key, (lolsRes) => {
 			resourceCashe[oldest] = lolsRes;
-			lolsRes.renewAge();
+			if (lolsRes != undefined) 
+				lolsRes.renewAge();
 			callback(resourceCashe[oldest]);			
 			})
 		}

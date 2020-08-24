@@ -11,7 +11,7 @@ const LoLsResources ='./LoLsResources/';
 const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
 	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1596811951335', MetaLang,
-    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9-5034bf1fa5b9~1596811949469', R;
+    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1596811949469', R;
 var DefaultMathlanguageKey = 'G4207537d-43d3-413f-9837~1596811192837', MathLang;
 
 class LanguageOfLanguages {
@@ -81,25 +81,27 @@ class LanguageOfLanguages {
 			 if (filename == undefined)
 				callback(undefined)
 			 else {
-			 	fs.readFile(LoLsResources + filename, (err, data) => {
-			 		if (err)
-			 			callback(undefined)
-			 		else {
+//			 	fs.readFile(LoLsResources + filename, (err, data) => {
+//			 		if (err)
+//			 			callback(undefined)
+//			 		else {
+var data = fs.readFileSync(LoLsResources + filename);
 			 			lolsClass = lolsClasses[filename[0]];
 			 			if (lolsClass == undefined)
 			 				callback(undefined)
 			 			else
 			 				callback(new lolsClass(JSON.parse(data)))
-			 		}
-			 	})
+//			 		}
+//			 	})
 			 }
 		})	
 	}
 	static getResourceFilename(pattern, callback) {
-		fs.readdir(LoLsResources, (err, files) => {
-			if (err)
-				callback(undefined)
-			else {
+//		fs.readdir(LoLsResources, (err, files) => {
+//			if (err)
+//				callback(undefined)
+//			else {
+var files = fs.readdirSync(LoLsResources);
 				var matches = files.filter(file => file.search(pattern) >= 0), c=0, p, a;
 				for (var i=0; i< matches.length; i++) {
 					p = matches[i].split('~');
@@ -108,8 +110,8 @@ class LanguageOfLanguages {
 						a = matches[i]
 				}
 				callback(a);
-			}
-		}) 
+//			}
+//		}) 
 	}
 	isStored(callback) {
 		fs.access(LoLsResources + this.filename, fs.F_OK, (err) => { 
@@ -316,60 +318,36 @@ class LoLsRuntime extends LanguageOfLanguages {
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
-
-var G1 = new LoLsGrammar(
-	 		{startRule: "topLevel",
-	 		 rules: DefaultMetalanguage.BSOMetaJSParser,
-	 		 inputType: 'text/plain',
-			 outputType: 'application/javascript'});
-G1._rules = DefaultMetalanguage.BSOMetaJSParser;
-var G2 = new LoLsGrammar(
-		 	{startRule: "trans",
-		 	 rules: DefaultMetalanguage.BSOMetaJSTranslator,
-		 	 inputType: "application/javascript",
-			 outputType: 'text/javascript'});
-G2._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-
-var MetaLang = new LoLsLanguage(
-	{
-	 name: "OMeta JS",
-	 pipeline: [
-	 	new LoLsGrammar(
-	 		{startRule: "topLevel",
-	 		 rules: DefaultMetalanguage.BSOMetaJSParser,
-	 		 inputType: 'text/plain',
-			 outputType: 'application/javascript'}), 
-		new LoLsGrammar(
-		 	{startRule: "trans",
-		 	 rules: DefaultMetalanguage.BSOMetaJSTranslator,
-		 	 inputType: "application/javascript",
-			 outputType: 'text/javascript'})]
-	});
-MetaLang.key=DefaultMetalanguageKey;	
-MetaLang._pipeline= [G1, G2];
-MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
-MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-
 const ResourceCasheSize = 10;
 var resourceCashe = new Array(ResourceCasheSize);
-resourceCashe[0] = MetaLang;
 
-/*
+getLoLsResource(DefaultRuntimeKey, (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load default runtime')
+	R = lolRes;
+});
+getLoLsResource("Gb7dfe16e-612c-483f-bbe0~1597634061086", (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load first grammar for default metalanguage.')
+	MetaLang = lolRes;
+});
+getLoLsResource("Gb74fe8f4-dca3-41d4-b0e1~1597634061086", (lolRes) => {
+	if (lolRes == undefined)
+		console.log('Unable to load second grammar for default metalanguage.')
+	MetaLang = lolRes;
+});
 getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load default metalanguage.')
 	MetaLang = lolRes;
 });
-*/
+MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
+MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
+
 getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load example Math grammar.')
 	MathLang = lolRes;
-});
-getLoLsResource(DefaultRuntimeKey, (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load default runtime')
-	R = lolRes;
 });
 
 // get resource from cashe or load resource from file

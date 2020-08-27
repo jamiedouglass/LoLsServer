@@ -16,16 +16,20 @@ var DefaultMathlanguageKey = 'G4207537d-43d3-413f-9837~1596811192837', MathLang;
 
 class LanguageOfLanguages {
   	constructor(props) {
-  		this._id = this.prefix + LanguageOfLanguages.uuid();
-		this._version = Date.now();
+  		if (props.hasOwnProperty('key')) {
+  			this.key = props['key'];
+  			delete props['key'];
+  		} else {
+			this._id = this.prefix + LanguageOfLanguages.uuid();
+			this._version = Date.now();
+		}
+		this.nextRes = LoLsResHead;
+		LoLsResHead = this;
 		var fields = LanguageOfLanguages.mySerializedFields();	
 		for (var p in props) { 
     		if (fields.includes(p) && props.hasOwnProperty(p)) {
       			this[p] = props[p]
       		}
-      	}
-      	if (fields.includes('key') && props.hasOwnProperty('key')) {
-      		this.key = props.key
       	}
     }
 	static mySerializedFields () {
@@ -66,6 +70,8 @@ class LanguageOfLanguages {
 		this._version = Date.now();
 	}
 	get name() {return this._name}
+	nextRes = undefined
+	saved = false;
 	description = undefined     // string about this LoLs item
 	authors = undefined			// string listing the names of authors
 	license = undefined			// string with license for this LoLs item
@@ -89,8 +95,11 @@ var data = fs.readFileSync(LoLsResources + filename);
 			 			lolsClass = lolsClasses[filename[0]];
 			 			if (lolsClass == undefined)
 			 				callback(undefined)
-			 			else
-			 				callback(new lolsClass(JSON.parse(data)))
+			 			else {
+			 				var res=new lolsClass(JSON.parse(data));
+			 				res.saved=true;
+			 				callback(res);	 				
+			 			}
 //			 		}
 //			 	})
 			 }
@@ -326,16 +335,17 @@ getLoLsResource(DefaultRuntimeKey, (lolRes) => {
 		console.log('Unable to load default runtime')
 	R = lolRes;
 });
+console.log(R)
 getLoLsResource("Gb7dfe16e-612c-483f-bbe0~1597634061086", (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load first grammar for default metalanguage.')
-	MetaLang = lolRes;
 });
+
 getLoLsResource("Gb74fe8f4-dca3-41d4-b0e1~1597634061086", (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load second grammar for default metalanguage.')
-	MetaLang = lolRes;
 });
+
 getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load default metalanguage.')
@@ -343,15 +353,35 @@ getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 });
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-
+console.log(MetaLang)
 getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load example Math grammar.')
 	MathLang = lolRes;
 });
+console.log(MathLang) 
+var LoLsResHead = undefined;
+
+function getLoLsResource(key, callback) {
+	var here = LoLsResHead, last = undefined;
+	while (here != undefined && here.key != key) {
+		last = here;
+		here = last.nextRes;		
+	}
+	if (here != undefined) {
+		last.nextRes=here.nextRes;
+		here.nextRes=LoLsResHead;
+		LoLsResHead=here;
+		callback(here);
+		return;
+	}
+	LanguageOfLanguages.load(key, (lolsRes) => {
+		callback(lolsRes);
+	});	
+}
 
 // get resource from cashe or load resource from file
-function getLoLsResource(key, callback) {
+function old_getLoLsResource(key, callback) {
 	var oldest = 0, oldestAge = Date.now();
 	for (var i=0; i < ResourceCasheSize; i++) {
 		if (resourceCashe[i] != undefined) {

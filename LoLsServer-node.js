@@ -67,7 +67,7 @@ class LanguageOfLanguages {
 	_name = "Unnamed"
 	set name(value) {
 		this._name = value;
-		this._version = Date.now();
+//		this._version = Date.now();
 	}
 	get name() {return this._name}
 	nextRes = undefined
@@ -76,9 +76,6 @@ class LanguageOfLanguages {
 	authors = undefined			// string listing the names of authors
 	license = undefined			// string with license for this LoLs item
 	website = undefined			// URL to website about this LoLs item
-	_age = Date.now()
-	get age() {return this._age}
-	renewAge() {this._age = Date.now()}
 	
 	static load(key, callback) {
 		var data, lolsClass, 
@@ -327,15 +324,12 @@ class LoLsRuntime extends LanguageOfLanguages {
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
-const ResourceCasheSize = 10;
-var resourceCashe = new Array(ResourceCasheSize);
-
 getLoLsResource(DefaultRuntimeKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load default runtime')
 	R = lolRes;
 });
-console.log(R)
+console.log(R.key+" next "+R.nextRes)
 getLoLsResource("Gb7dfe16e-612c-483f-bbe0~1597634061086", (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load first grammar for default metalanguage.')
@@ -353,15 +347,27 @@ getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 });
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-console.log(MetaLang)
+console.log(MetaLang.key+" next "+MetaLang.nextRes.key)
+console.log(MetaLang._pipeline[0].key+" next "+MetaLang._pipeline[0].nextRes.key)
+console.log(MetaLang._pipeline[1].key+" next "+MetaLang._pipeline[1].nextRes.key)
+
 getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load example Math grammar.')
 	MathLang = lolRes;
 });
-console.log(MathLang) 
+console.log(MathLang.key+" next "+MathLang.nextRes.key) 
+
+console.log('Resource List')
+var loop=LoLsResHead;
+while (loop != undefined) {
+	console.log(loop.key)
+	loop=loop.nextRes;
+}
+
 var LoLsResHead = undefined;
 
+// get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
 	var here = LoLsResHead, last = undefined;
 	while (here != undefined && here.key != key) {
@@ -369,55 +375,17 @@ function getLoLsResource(key, callback) {
 		here = last.nextRes;		
 	}
 	if (here != undefined) {
-		last.nextRes=here.nextRes;
-		here.nextRes=LoLsResHead;
-		LoLsResHead=here;
+		if (last != undefined) {
+			last.nextRes=here.nextRes;
+			here.nextRes=LoLsResHead;
+			LoLsResHead=here;
+		}
 		callback(here);
 		return;
 	}
 	LanguageOfLanguages.load(key, (lolsRes) => {
 		callback(lolsRes);
 	});	
-}
-
-// get resource from cashe or load resource from file
-function old_getLoLsResource(key, callback) {
-	var oldest = 0, oldestAge = Date.now();
-	for (var i=0; i < ResourceCasheSize; i++) {
-		if (resourceCashe[i] != undefined) {
-			if (resourceCashe[i].key == key) {
-				resourceCashe[i].renewAge();
-				callback(resourceCashe[i]);
-				return;
-			}
-			if (resourceCashe[i].age < oldestAge) {
-				oldest = i;
-				oldestAge = resourceCashe[i].age;
-			}
-		} else {
-			LanguageOfLanguages.load(key, (lolsRes) => {
-				resourceCashe[i] = lolsRes;
-				if (lolsRes != undefined) 
-					lolsRes.renewAge();
-				callback(resourceCashe[i]);
-			});	
-			return;			
-		}
-	}
-	resourceCashe[oldest].store(true, (err) => {
-		if (err) {
-    			res.statusCode = 400;
-    			res.send('page out failed ' + err);
-		} else {
-			// load resource key into oldest index
-			LanguageOfLanguages.load(key, (lolsRes) => {
-			resourceCashe[oldest] = lolsRes;
-			if (lolsRes != undefined) 
-				lolsRes.renewAge();
-			callback(resourceCashe[oldest]);			
-			})
-		}
-	})
 }
 
 // SERVICES

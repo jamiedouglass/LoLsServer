@@ -14,6 +14,8 @@ var DefaultMetalanguage = require(DefaultMetalanguagePath),
     DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1596811949469', R;
 var DefaultMathlanguageKey = 'G4207537d-43d3-413f-9837~1596811192837', MathLang;
 
+var LoLsResHead = undefined;
+
 class LanguageOfLanguages {
   	constructor(props) {
   		if (props.hasOwnProperty('key')) {
@@ -23,6 +25,10 @@ class LanguageOfLanguages {
 			this._id = this.prefix + LanguageOfLanguages.uuid();
 			this._version = Date.now();
 		}
+		if (props.hasOwnProperty('name')) {
+  			this._name = props['name'];
+  			delete props['name'];
+  		}
 		this.nextRes = LoLsResHead;
 		LoLsResHead = this;
 		var fields = LanguageOfLanguages.mySerializedFields();	
@@ -67,7 +73,7 @@ class LanguageOfLanguages {
 	_name = "Unnamed"
 	set name(value) {
 		this._name = value;
-//		this._version = Date.now();
+		this._version = Date.now();
 	}
 	get name() {return this._name}
 	nextRes = undefined
@@ -193,11 +199,12 @@ class LoLsGrammar extends LanguageOfLanguages {
 		for (var p in props) 
     		if (fields.includes(p) && props.hasOwnProperty(p))
       			this[p] = props[p]
+      	this.checkGrammar();
     }
 	static mySerializedFields () {
 		return ['source','startRule',
 				'inputType','outputType','rulesSource',
-				'metalanguageId','runtimeId']
+				'metalanguageKey','runtimeKey']
 	}
 	get serializedFields () {
 		var fields = super.serializedFields;
@@ -210,8 +217,8 @@ class LoLsGrammar extends LanguageOfLanguages {
     _source = undefined 			// source for Grammar
     set source(value) {
     	this._source = value
-		this.metalanguage = this._metalanguage
-		this.runtime = this._runtime
+//		this.metalanguage = this._metalanguage
+//		this.runtime = this._runtime
     }
     get source() {return this._source}
 	_startRule = undefined			// string key from rules
@@ -231,12 +238,12 @@ class LoLsGrammar extends LanguageOfLanguages {
 	_rulesSource = undefined		// string with sources of rules
 	set rulesSource(value) {
 		this._rulesSource = value;
-		this.runtime = this._runtime
+//		this.runtime = this._runtime
 	}
 	get rulesSource() {return this._rulesSource}
 	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
-	set metalanguage(value) {
+/*	set metalanguage(value) {
 		if (value === undefined)
 			this._metalanguage = MetaLang
 		else
@@ -257,7 +264,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 			this._rulesSource = undefined;
 		}
 		return this.status
-	}  
+	}  */
 	set metalanguageKey(key) {
 		if (MetaLang.key == key)
 			return this._metalanguage = MetaLang
@@ -269,7 +276,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 		return this._metalanguage.key
 	}
 	_runtime = R  					// metalanguage runtime environment
-	set runtime(value) {
+/*	set runtime(value) {
 		if (value === undefined)
 			this._runtime = R
 		if (this._rulesSource === undefined)
@@ -285,11 +292,11 @@ class LoLsGrammar extends LanguageOfLanguages {
 			this._status = '' + e
 		}
 		return this.status
-	}
+	} */
 	set runtimeKey(key) {
 		if (R.key == key)
-			return this.runtime = R
-		this.runtime = R				// temp needs to load from file
+			return this._runtime = R
+		this._runtime = R				// temp needs to load from file
 	}
 	get runtimeKey() {return this._runtime.key}	
 	translate(sourceInput) {
@@ -310,6 +317,25 @@ class LoLsGrammar extends LanguageOfLanguages {
 		};
 		return result;
 	}
+	checkGrammar() {
+		this._status = undefined
+    	try { 
+    		this._rulesSource = this._metalanguage.translate(this._source);
+			this._rules = this._runtime.evaluate(this._rulesSource)
+			if (!this._rules.hasOwnProperty(this._startRule))
+				throw ' ' + this._startRule + ' not a rule'
+			this._status = 'ready'
+    	}
+    	catch (e) {
+			if (e.errorPos==undefined) {
+				this._status = e.toString() + " at unknown postion " + e.errorPos;		
+			} else {
+				this._status = e.toString() + " at " + e.errorPos + 
+								" " + source.substring(e.errorPos);
+			}
+		}
+		return this.status			
+	}
 }
 
 class LoLsRuntime extends LanguageOfLanguages {
@@ -329,7 +355,6 @@ getLoLsResource(DefaultRuntimeKey, (lolRes) => {
 		console.log('Unable to load default runtime')
 	R = lolRes;
 });
-console.log(R.key+" next "+R.nextRes)
 getLoLsResource("Gb7dfe16e-612c-483f-bbe0~1597634061086", (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load first grammar for default metalanguage.')
@@ -346,26 +371,16 @@ getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 	MetaLang = lolRes;
 });
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
+MetaLang._pipeline[0]._metalanguage=MetaLang;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-console.log(MetaLang.key+" next "+MetaLang.nextRes.key)
-console.log(MetaLang._pipeline[0].key+" next "+MetaLang._pipeline[0].nextRes.key)
-console.log(MetaLang._pipeline[1].key+" next "+MetaLang._pipeline[1].nextRes.key)
+MetaLang._pipeline[1]._metalanguage=MetaLang;
 
 getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load example Math grammar.')
 	MathLang = lolRes;
 });
-console.log(MathLang.key+" next "+MathLang.nextRes.key) 
 
-console.log('Resource List')
-var loop=LoLsResHead;
-while (loop != undefined) {
-	console.log(loop.key)
-	loop=loop.nextRes;
-}
-
-var LoLsResHead = undefined;
 
 // get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
@@ -407,7 +422,7 @@ app.post('/', (req, res) => {
 				ans = e.toString() + " at " + e.errorPos + " " +
 					  source.substring(e.errorPos);
 			}
-		};
+		}; 
 		res.send('' + ans)
    	});
 });
@@ -421,8 +436,9 @@ app.post('/Grammar/', (req, res) => {
 			res.send('""' + grammarKey + '" grammar not found."'); 
 		} else {
 			grammar.source = source;
+			grammar.checkGrammar();
 			res.send('' + grammar.status);
-		}			
+		}	
    	});
 });
 

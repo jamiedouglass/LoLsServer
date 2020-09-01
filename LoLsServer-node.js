@@ -230,7 +230,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
 	set metalanguageKey(key) {
-		if (MetaLang.key == key)
+		if (MetaLang != undefined && MetaLang.key == key)
 			this._metalanguage = MetaLang
 		getLoLsResource(key, (lolRes) => {
 			this._metalanguage = lolRes;
@@ -243,7 +243,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}
 	_runtime = Runtime  					// metalanguage runtime environment
 	set runtimeKey(key) {
-		if (Runtime.key == key)
+		if (Runtime != undefined && Runtime.key == key)
 			this._runtime = Runtime
 		getLoLsResource(key, (lolRes) => {
 			this._runtime = lolRes;

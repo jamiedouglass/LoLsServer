@@ -8,5 +8,7 @@
 	"startRule": "trans",
 	"inputType": "application/javascript",
 	"outputType": "text/javascript",
-	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSTranslator\"]"
+	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSTranslator\"]",
+	"metalanguageKey": "L28c00bd7-f8f9-4150-bd81~1596811951335",
+	"runtimeKey": "Ree1df5a3-1dae-4905-adc9~1596811949469"
 }

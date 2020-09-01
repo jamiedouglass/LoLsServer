@@ -37,7 +37,8 @@ class LanguageOfLanguages {
       		}
       	}
 		for (var p in fields) { 
-      		delete props[p];
+			if (props.hasOwnProperty(p))
+      		 	delete props[p];
       	}
     }
 	static mySerializedFields () {

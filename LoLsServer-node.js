@@ -11,8 +11,7 @@ const LoLsResources ='./LoLsResources/';
 const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
 	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1596811951335', MetaLang,
-    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1596811949469', R;
-var DefaultMathlanguageKey = 'G4207537d-43d3-413f-9837~1596811192837', MathLang;
+    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1596811949469', Runtime;
 
 var LoLsResHead = undefined;
 
@@ -29,13 +28,16 @@ class LanguageOfLanguages {
   			this._name = props['name'];
   			delete props['name'];
   		}
-		this.nextRes = LoLsResHead;
+		this.nextRes = LoLsResHead;         // add resource to avoid circular references
 		LoLsResHead = this;
 		var fields = LanguageOfLanguages.mySerializedFields();	
 		for (var p in props) { 
     		if (fields.includes(p) && props.hasOwnProperty(p)) {
       			this[p] = props[p]
       		}
+      	}
+		for (var p in fields) { 
+      		delete props[p];
       	}
     }
 	static mySerializedFields () {
@@ -74,6 +76,7 @@ class LanguageOfLanguages {
 	set name(value) {
 		this._name = value;
 		this._version = Date.now();
+		this.store = false;		
 	}
 	get name() {return this._name}
 	nextRes = undefined
@@ -130,13 +133,14 @@ var files = fs.readdirSync(LoLsResources);
 			if (err) 
 				callback(false)
 			else
-			  	callback(true)
+			  	callback(true && this.saved)
 		})
 	}
 	store(replace, callback) {
 		var writeIfExists = replace == true ? 'w' : 'wx';
 		fs.writeFile(LoLsResources + this.filename, this.serialize, 
-					{flag: writeIfExists}, callback)
+					{flag: writeIfExists}, callback);
+		this.saved = true;		
 	}
 }
 
@@ -158,18 +162,13 @@ class LoLsLanguage extends LanguageOfLanguages {
 	get prefix() {return 'L'}
 	_pipeline = []
 	set pipelineKeys(keys) {
-		var pipe=[], last = undefined, error = '';
+		this._pipeline=[];
       	for (var i= 0; i < keys.length; i++) {
-      		getLoLsResource(keys[i], (gram) => {
-      			pipe[i] = gram;
+      		getLoLsResource(keys[i], (resource) => {   // sync operation support?
+      			this._pipeline[i] = resource;
       		});
-      		if (last != undefined && last.outputType != pipe[i].inputType)
-      			error = error+' '(i-1)+':'+last.outputType+' not '+pipe[i].inputType;
-      		last = pipe[i];
       	}
-      	if (error != '')	
-      		return 'Pipeline mismatch '+error
-		this._pipeline = pipe;
+      	return this.checkPipeline();
 	}
 	get pipelineKeys() {return this._pipeline.map((x) => {return x.key})}
 	
@@ -182,6 +181,16 @@ class LoLsLanguage extends LanguageOfLanguages {
 		if (this._pipeline.length == 0)
 			return undefined;
 		return this._pipeline[this._pipeline.length-1].outputType;
+	}
+	checkPipeline() {
+		var ans = '';
+		for (var i=0; i < this._pipeline.length-1; i++) {
+			if (this._pipeline[i].outputType != this._pipeline[i+1].inputType) {
+				ans=ans+i+':'+this._pipeline[i].outputType+' not '+
+					this._pipeline[i+1].inputType+"; ";
+			}
+		}
+		return ans;
 	}
 	translate(source) {
 		var result = source;
@@ -199,7 +208,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 		for (var p in props) 
     		if (fields.includes(p) && props.hasOwnProperty(p))
       			this[p] = props[p]
-      	this.checkGrammar();
+      	this.compile();
     }
 	static mySerializedFields () {
 		return ['source','startRule',
@@ -212,97 +221,42 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}
 	
     get prefix() {return 'G'}
-    _status = undefined
-    get status() {return this._status}
-    _source = undefined 			// source for Grammar
-    set source(value) {
-    	this._source = value
-//		this.metalanguage = this._metalanguage
-//		this.runtime = this._runtime
-    }
-    get source() {return this._source}
-	_startRule = undefined			// string key from rules
-	set startRule(value){
-		if (this._rules === undefined)
-			return this._startRule = value 
-		if (value === undefined)
-			return this._startRule = Object.keys(this._rules)[0]
-		if (this._rules.hasOwnProperty(value))
-			return this._startRule = value
-		this._status = '' + value + ' not a rule'
-		return this._startRule = undefined 
-	}
-	get startRule() {return this._startRule}
+    source = undefined 			// source for Grammar
+	startRule = undefined			// string key from rules
 	inputType = 'text/plain'
 	outputType = 'text/javascript'
-	_rulesSource = undefined		// string with sources of rules
-	set rulesSource(value) {
-		this._rulesSource = value;
-//		this.runtime = this._runtime
-	}
-	get rulesSource() {return this._rulesSource}
+	rulesSource = undefined		// string with sources of rules
 	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
-/*	set metalanguage(value) {
-		if (value === undefined)
-			this._metalanguage = MetaLang
-		else
-			this._metalanguage = value
-		if (this._source === undefined)
-			return this.status
-    	try {
-    		this._rulesSource = this._metalanguage.translate(this._source);
-    		this._status = 'translated';
-    	}
-    	catch (e) {
-			if (e.errorPos==undefined) {
-				this._status = e.toString() + " at unknown postion " + e.errorPos;		
-			} else {
-				this._status = e.toString() + " at " + e.errorPos + 
-								" " + source.substring(e.errorPos);
-			}
-			this._rulesSource = undefined;
-		}
-		return this.status
-	}  */
 	set metalanguageKey(key) {
 		if (MetaLang.key == key)
-			return this._metalanguage = MetaLang
-		this._metalanguage = MetaLang   // temp needs to load from file
+			this._metalanguage = MetaLang
+		getLoLsResource(key, (lolRes) => {
+			this._metalanguage = lolRes;
+		});
 	}
 	get metalanguageKey() {
 		if (this._metalanguage == undefined)
 			return undefined
 		return this._metalanguage.key
 	}
-	_runtime = R  					// metalanguage runtime environment
-/*	set runtime(value) {
-		if (value === undefined)
-			this._runtime = R
-		if (this._rulesSource === undefined)
-			return this.status
-		try {
-			this._rules = this._runtime.evaluate(this._rulesSource)
-			this._status = 'rules sets'
-			this.startRule = this._startRule
-			if (this.startRule != undefined)			
-				this._status = 'ready'
-		} catch (e) {
-			this._rules = undefined
-			this._status = '' + e
-		}
-		return this.status
-	} */
+	_runtime = Runtime  					// metalanguage runtime environment
 	set runtimeKey(key) {
-		if (R.key == key)
-			return this._runtime = R
-		this._runtime = R				// temp needs to load from file
+		if (Runtime.key == key)
+			this._runtime = Runtime
+		getLoLsResource(key, (lolRes) => {
+			this._runtime = lolRes;
+		});
 	}
-	get runtimeKey() {return this._runtime.key}	
+	get runtimeKey() {
+		if (this._runtime == undefined)
+			return undefined
+		return this._runtime.key
+	}	
 	translate(sourceInput) {
-		var result;
-		if (this.startRule === undefined || this._rules === undefined)
-			return undefined;
+		var result = this.isReady();
+//		if (result != true)					// temp until isReady fixed
+//			return result;
 		if (this.inputType == 'text/plain') {
 			result=this._rules.matchAll(sourceInput, this.startRule, undefined, 
 				function(list, pos) {
@@ -317,24 +271,38 @@ class LoLsGrammar extends LanguageOfLanguages {
 		};
 		return result;
 	}
-	checkGrammar() {
-		this._status = undefined
+	isReady() {
+		if (this.source == undefined)
+			return "no source"
+		if (this.rulesSource == undefined)
+			return "no rules source"
+		if (this._rules == undefined)
+			return "no rules"
+		if (this.startRule == undefined)
+			return "no start rule"
+//		if (this._rules.hasOwnProperty(this.startRule))		// temp MetaLang test needed 
+//			return "missing start rule"
+		return true
+	}
+	compile() {
     	try { 
-    		this._rulesSource = this._metalanguage.translate(this._source);
-			this._rules = this._runtime.evaluate(this._rulesSource)
-			if (!this._rules.hasOwnProperty(this._startRule))
-				throw ' ' + this._startRule + ' not a rule'
-			this._status = 'ready'
-    	}
-    	catch (e) {
-			if (e.errorPos==undefined) {
-				this._status = e.toString() + " at unknown postion " + e.errorPos;		
+    		this.rulesSource = this._metalanguage.translate(this.source);
+    	} catch (e) {
+			if (e.errorPos == undefined) {
+				return e.toString() + " at unknown postion " + e.errorPos;		
 			} else {
-				this._status = e.toString() + " at " + e.errorPos + 
-								" " + source.substring(e.errorPos);
+				return e.toString() + " at " + e.errorPos + 
+								" " + this.source.substring(e.errorPos);
 			}
 		}
-		return this.status			
+    	try { 
+			this._rules = this._runtime.evaluate(this.rulesSource)
+    	} catch (e) {
+			return e.toString() + " evaluating rules to runtime";		
+		}
+		if (this.startRule == undefined)
+			this.startRule = Object.keys(this._rules)[0]
+		return this.isReady()
 	}
 }
 
@@ -353,16 +321,7 @@ class LoLsRuntime extends LanguageOfLanguages {
 getLoLsResource(DefaultRuntimeKey, (lolRes) => {
 	if (lolRes == undefined)
 		console.log('Unable to load default runtime')
-	R = lolRes;
-});
-getLoLsResource("Gb7dfe16e-612c-483f-bbe0~1597634061086", (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load first grammar for default metalanguage.')
-});
-
-getLoLsResource("Gb74fe8f4-dca3-41d4-b0e1~1597634061086", (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load second grammar for default metalanguage.')
+	Runtime = lolRes;
 });
 
 getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
@@ -371,16 +330,7 @@ getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 	MetaLang = lolRes;
 });
 MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
-MetaLang._pipeline[0]._metalanguage=MetaLang;
 MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-MetaLang._pipeline[1]._metalanguage=MetaLang;
-
-getLoLsResource(DefaultMathlanguageKey, (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load example Math grammar.')
-	MathLang = lolRes;
-});
-
 
 // get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
@@ -436,8 +386,8 @@ app.post('/Grammar/', (req, res) => {
 			res.send('""' + grammarKey + '" grammar not found."'); 
 		} else {
 			grammar.source = source;
-			grammar.checkGrammar();
-			res.send('' + grammar.status);
+			if (grammar.compile())
+			res.send('' + grammar.isReady());
 		}	
    	});
 });

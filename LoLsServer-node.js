@@ -15,6 +15,22 @@ var DefaultMetalanguage = require(DefaultMetalanguagePath),
 
 var LoLsResHead = undefined;
 
+function initialize() {
+	getLoLsResource(DefaultRuntimeKey, (lolRes) => {
+		if (lolRes == undefined)
+			console.log('Unable to load default runtime')
+		Runtime = lolRes;
+	});
+
+	getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
+		if (lolRes == undefined)
+			console.log('Unable to load default metalanguage.')
+		MetaLang = lolRes;
+	});
+	MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
+	MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
+}
+
 class LanguageOfLanguages {
   	constructor(props) {
   		if (props.hasOwnProperty('key')) {
@@ -350,20 +366,6 @@ class LoLsRuntime extends LanguageOfLanguages {
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
-getLoLsResource(DefaultRuntimeKey, (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load default runtime')
-	Runtime = lolRes;
-});
-
-getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
-	if (lolRes == undefined)
-		console.log('Unable to load default metalanguage.')
-	MetaLang = lolRes;
-});
-MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
-MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
-
 // get resource from cashe or load resource from file
 function getLoLsResource(key, callback) {
 	var here = LoLsResHead, last = undefined;
@@ -384,6 +386,8 @@ function getLoLsResource(key, callback) {
 		callback(lolsRes);
 	});	
 }
+
+initialize();
 
 // SERVICES
 // return translation of a source object using a language 

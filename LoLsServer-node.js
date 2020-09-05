@@ -10,8 +10,8 @@ const LoLsBootstrap = './LoLsBootstrap/';
 const LoLsResources ='./LoLsResources/';
 const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
-	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1596811951335', MetaLang,
-    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1596811949469', Runtime;
+	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1577865600000', MetaLang,
+    DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1577865600000', Runtime;
 
 var LoLsResHead = undefined;
 
@@ -21,7 +21,6 @@ function initialize() {
 			console.log('Unable to load default runtime')
 		Runtime = lolRes;
 	});
-
 	getLoLsResource(DefaultMetalanguageKey, (lolRes) => {
 		if (lolRes == undefined)
 			console.log('Unable to load default metalanguage.')
@@ -309,8 +308,8 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}	
 	translate(sourceInput) {
 		var result = this.isReady();
-//		if (result != true)					// temp until isReady fixed
-//			return result;
+		if (result != true)					// temp until isReady fixed
+			return result;
 		if (this.inputType == 'text/plain') {
 			result=this._rules.matchAll(sourceInput, this.startRule, undefined, 
 				function(list, pos) {
@@ -334,8 +333,8 @@ class LoLsGrammar extends LanguageOfLanguages {
 			return "no rules"
 		if (this.startRule == undefined)
 			return "no start rule"
-		if (!this._rules.hasOwnProperty(this.startRule))
-			return "missing start rule"
+//		if (!this._rulesSource.hasOwnProperty(this.startRule)) 
+//			return "missing start rule"
 		return true
 	}
 	complete() {

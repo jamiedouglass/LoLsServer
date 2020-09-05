@@ -1,6 +1,6 @@
 {
 	"name": "Bootstrap OMeta JS Translator",
-	"key": "Gb74fe8f4-dca3-41d4-b0e1~1597634061086",
+	"key": "Gb74fe8f4-dca3-41d4-b0e1~1577865600000",
 	"description": "This Grammar translates OMeta JS intermedate code to execution form.",
 	"authors": "Alex Wrath, Jamie Douglass",
 	"license": "MIT Open Source 2020",
@@ -8,5 +8,7 @@
 	"startRule": "trans",
 	"inputType": "application/javascript",
 	"outputType": "text/javascript",
-	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSTranslator\"]"
+	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSTranslator\"]",
+	"metalanguageKey": "L28c00bd7-f8f9-4150-bd81~1596811951335",
+	"runtimeKey": "Ree1df5a3-1dae-4905-adc9~1596811949469"
 }

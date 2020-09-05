@@ -1,14 +1,14 @@
 const express = require('express');
-const app =express();
+const app = express();
 app.use(express.json());
 app.use(express.text());
 const fs = require('fs');
 
 const lib = require('./Platform/lib');
-const parser=require('./Platform/parser');
+const parser = require('./Platform/parser');
 const LoLsBootstrap = './LoLsBootstrap/';
 const LoLsResources ='./LoLsResources/';
-const DefaultMetalanguagePath= LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
+const DefaultMetalanguagePath = LoLsBootstrap + 'OMeta/bs-ometa-js-compiler.js';
 var DefaultMetalanguage = require(DefaultMetalanguagePath),
 	DefaultMetalanguageKey = 'L28c00bd7-f8f9-4150-bd81~1577865600000', MetaLang,
     DefaultRuntimeKey = 'Ree1df5a3-1dae-4905-adc9~1577865600000', Runtime;
@@ -43,7 +43,7 @@ class LanguageOfLanguages {
   			this._name = props['name'];
   			delete props['name'];
   		}
-		this.nextRes = LoLsResHead;         // add resource to avoid circular references
+		this.nextRes = LoLsResHead;         // add resource for circular references
 		LoLsResHead = this;
 		var fields = LanguageOfLanguages.mySerializedFields();	
 		for (var p in props) { 
@@ -92,11 +92,11 @@ class LanguageOfLanguages {
 	set name(value) {
 		this._name = value;
 		this._version = Date.now();
-		this.store = false;		
+		this._saved = false;		
 	}
 	get name() {return this._name}
 	nextRes = undefined
-	saved = false;
+	_saved = false;
 	description = undefined     // string about this LoLs item
 	authors = undefined			// string listing the names of authors
 	license = undefined			// string with license for this LoLs item
@@ -119,7 +119,7 @@ var data = fs.readFileSync(LoLsResources + filename);
 			 				callback(undefined)
 			 			else {
 			 				var res=new lolsClass(JSON.parse(data));
-			 				res.saved=true;
+			 				res._saved=true;
 			 				callback(res);	 				
 			 			}
 //			 		}
@@ -149,14 +149,14 @@ var files = fs.readdirSync(LoLsResources);
 			if (err) 
 				callback(false)
 			else
-			  	callback(true && this.saved)
+			  	callback(true && this._saved)
 		})
 	}
 	store(replace, callback) {
 		var writeIfExists = replace == true ? 'w' : 'wx';
 		fs.writeFile(LoLsResources + this.filename, this.serialize, 
 					{flag: writeIfExists}, callback);
-		this.saved = true;		
+		this._saved = true;		
 	}
 }
 
@@ -293,7 +293,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 			return undefined
 		return this._metalanguage.key
 	}
-	_runtime = Runtime  					// metalanguage runtime environment
+	_runtime = Runtime  			// metalanguage runtime environment
 	set runtimeKey(key) {
 		if (Runtime != undefined && Runtime.key == key)
 			this._runtime = Runtime
@@ -308,7 +308,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}	
 	translate(sourceInput) {
 		var result = this.isReady();
-		if (result != true)					// temp until isReady fixed
+		if (result != true)
 			return result;
 		if (this.inputType == 'text/plain') {
 			result=this._rules.matchAll(sourceInput, this.startRule, undefined, 
@@ -333,8 +333,6 @@ class LoLsGrammar extends LanguageOfLanguages {
 			return "no rules"
 		if (this.startRule == undefined)
 			return "no start rule"
-//		if (!this._rulesSource.hasOwnProperty(this.startRule)) 
-//			return "missing start rule"
 		return true
 	}
 	complete() {

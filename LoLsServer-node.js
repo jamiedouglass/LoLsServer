@@ -209,7 +209,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 		for (var p in props) 
     		if (fields.includes(p) && props.hasOwnProperty(p))
       			this[p] = props[p]
-      	this.compile();
+      	this.complete();
     }
 	static mySerializedFields () {
 		return ['source','startRule',
@@ -222,11 +222,48 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}
 	
     get prefix() {return 'G'}
-    source = undefined 			// source for Grammar
+    source = undefined 				// source for Grammar
 	startRule = undefined			// string key from rules
 	inputType = 'text/plain'
 	outputType = 'text/javascript'
-	rulesSource = undefined		// string with sources of rules
+	grammar(scr, startR, inType, outType) {
+		var rScr, r;
+		if (inType == undefined)
+			inType = 'text/plain';
+		if (outType == undefined)
+			outType = 'text/javascript';
+    	try { 
+    		rScr = this._metalanguage.translate(scr);
+    	} catch (e) {
+			if (e.errorPos == undefined) {
+				return e.toString() + " at unknown postion " + e.errorPos;		
+			} else {
+				return e.toString() + " at " + e.errorPos + 
+								" " + src.substring(e.errorPos);
+			}
+		}
+    	try { 
+			r = this._runtime.evaluate(rScr)
+    	} catch (e) {
+			return e.toString() + " evaluating rules to runtime";		
+		}
+		try {
+			if (startR == undefined)
+				startR = Object.keys(r)[0]
+			if (!r.hasOwnProperty(startR))
+				return "missing start rule"
+		} catch (e) {
+			return "no start rule " + startR
+		}
+		this.source = scr;
+		this.startRule = startR;
+		this.inputType = inType;
+		this.outType = outType;
+		this.rulesSource = rScr;
+		this.rules = r;
+		return true;
+	}
+	rulesSource = undefined			// string with sources of rules
 	_rules = undefined				// rule name & functions pairs
 	_metalanguage = MetaLang		// LoLs metalanguage for this grammar
 	set metalanguageKey(key) {
@@ -281,20 +318,14 @@ class LoLsGrammar extends LanguageOfLanguages {
 			return "no rules"
 		if (this.startRule == undefined)
 			return "no start rule"
-//		if (this._rules.hasOwnProperty(this.startRule))		// temp MetaLang test needed 
-//			return "missing start rule"
+		if (!this._rules.hasOwnProperty(this.startRule))
+			return "missing start rule"
 		return true
 	}
-	compile() {
-    	try { 
-    		this.rulesSource = this._metalanguage.translate(this.source);
-    	} catch (e) {
-			if (e.errorPos == undefined) {
-				return e.toString() + " at unknown postion " + e.errorPos;		
-			} else {
-				return e.toString() + " at " + e.errorPos + 
-								" " + this.source.substring(e.errorPos);
-			}
+	complete() {
+		if (this.rulesSource == undefined) {
+			return this.grammar(this.source, this.startRule, 
+								this.inputType, this.outputType);
 		}
     	try { 
 			this._rules = this._runtime.evaluate(this.rulesSource)
@@ -386,9 +417,8 @@ app.post('/Grammar/', (req, res) => {
 		if (grammar === undefined) {
 			res.send('""' + grammarKey + '" grammar not found."'); 
 		} else {
-			grammar.source = source;
-			if (grammar.compile())
-			res.send('' + grammar.isReady());
+			res.send('' + grammar.complete(source, grammar.startRule, 
+							 grammar.inputType, grammar.outputType));
 		}	
    	});
 });

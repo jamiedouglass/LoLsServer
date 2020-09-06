@@ -26,8 +26,6 @@ function initialize() {
 			console.log('Unable to load default metalanguage.')
 		MetaLang = lolRes;
 	});
-	MetaLang._pipeline[0]._rules = DefaultMetalanguage.BSOMetaJSParser;
-	MetaLang._pipeline[1]._rules = DefaultMetalanguage.BSOMetaJSTranslator;
 }
 
 class LanguageOfLanguages {
@@ -293,7 +291,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 			return undefined
 		return this._metalanguage.key
 	}
-	_runtime = Runtime  			// metalanguage runtime environment
+	_runtime = Runtime  					// metalanguage runtime environment
 	set runtimeKey(key) {
 		if (Runtime != undefined && Runtime.key == key)
 			this._runtime = Runtime
@@ -308,7 +306,7 @@ class LoLsGrammar extends LanguageOfLanguages {
 	}	
 	translate(sourceInput) {
 		var result = this.isReady();
-		if (result != true)
+		if (result != true)					// temp until isReady fixed
 			return result;
 		if (this.inputType == 'text/plain') {
 			result=this._rules.matchAll(sourceInput, this.startRule, undefined, 
@@ -336,10 +334,19 @@ class LoLsGrammar extends LanguageOfLanguages {
 		return true
 	}
 	complete() {
+		// Bootstrap grammars for OMeta JS
+		if (this.source == "DefaultMetalanguage.BSOMetaJSParser") 
+			this._rules = DefaultMetalanguage.BSOMetaJSParser;
+		if (this.source == "DefaultMetalanguage.BSOMetaJSTranslator") 
+			this._rules = DefaultMetalanguage.BSOMetaJSTranslator;
+		if (this._rules != undefined)
+			return this.isReady();
+		// create from source
 		if (this.rulesSource == undefined) {
 			return this.grammar(this.source, this.startRule, 
 								this.inputType, this.outputType);
 		}
+		// create from rules source
     	try { 
 			this._rules = this._runtime.evaluate(this.rulesSource)
     	} catch (e) {

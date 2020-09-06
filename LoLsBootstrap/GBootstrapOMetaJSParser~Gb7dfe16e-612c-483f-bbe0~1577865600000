@@ -8,7 +8,7 @@
 	"startRule": "topLevel",
 	"inputType": "text/plain",
 	"outputType": "application/javascript",
-	"rulesSource": "DefaultMetalanguage[\"BSOMetaJSParser\"]",
+	"rulesSource": "DefaultMetalanguage.BSOMetaJSParser",
 	"metalanguageKey": "L28c00bd7-f8f9-4150-bd81~1577865600000",
 	"runtimeKey": "Ree1df5a3-1dae-4905-adc9~1577865600000"
 }

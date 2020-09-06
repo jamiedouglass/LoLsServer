@@ -28,6 +28,20 @@ function initialize() {
 	});
 }
 
+function startShutdown() {
+	console.log("\nStarting Shutdown...");
+	server.close(() => {
+		console.log("Shutdown Complete");
+		process.exit(0);
+	});
+	setTimeout(() => {
+        console.error('Could not close gracefully, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+    // save resources
+    saveLoLsResources();
+}
+
 class LanguageOfLanguages {
   	constructor(props) {
   		if (props.hasOwnProperty('key')) {
@@ -95,6 +109,7 @@ class LanguageOfLanguages {
 	get name() {return this._name}
 	nextRes = undefined
 	_saved = false;
+	get saved() {return this._saved}
 	description = undefined     // string about this LoLs item
 	authors = undefined			// string listing the names of authors
 	license = undefined			// string with license for this LoLs item
@@ -147,11 +162,13 @@ var files = fs.readdirSync(LoLsResources);
 			if (err) 
 				callback(false)
 			else
-			  	callback(true && this._saved)
+			  	callback(this._saved)
 		})
 	}
 	store(replace, callback) {
 		var writeIfExists = replace == true ? 'w' : 'wx';
+		if (callback == undefined)
+			callback = function() {};
 		fs.writeFile(LoLsResources + this.filename, this.serialize, 
 					{flag: writeIfExists}, callback);
 		this._saved = true;		
@@ -367,6 +384,7 @@ class LoLsRuntime extends LanguageOfLanguages {
       			this[p] = props[p]
     }
     static mySerializedFields() {return []}
+	get prefix() {return 'R'}
 	evaluate(code) {return eval.call(null, code)}  // uses global context
 }
 
@@ -389,6 +407,15 @@ function getLoLsResource(key, callback) {
 	LanguageOfLanguages.load(key, (lolsRes) => {
 		callback(lolsRes);
 	});	
+}
+
+function saveLoLsResources(force) {
+	var here = LoLsResHead;
+	while (here != undefined) {
+		if (force == true || here.saved == false)
+			here.store(true);
+		here = here.nextRes;
+	}
 }
 
 initialize();
@@ -494,4 +521,7 @@ app.delete('/', (req, res) => {
 
 //PORT ENVIRONMENT VARIABLE
 const port = process.env.PORT || 8080;
-app.listen(port, () => console.log(`Listening on port ${port}..`));
+const server = app.listen(port, () => console.log(`Listening on port ${port}..`));
+
+process.on('SIGTERM', startShutdown);
+process.on('SIGINT', startShutdown);

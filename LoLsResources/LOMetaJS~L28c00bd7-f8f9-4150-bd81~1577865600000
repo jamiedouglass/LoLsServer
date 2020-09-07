@@ -4,5 +4,8 @@
 	"description": "This is the default metalanguage for Language of Languages.",
 	"authors": "Alex Wrath, Jamie Douglass",
 	"license": "MIT Open Source 2020",
-	"pipelineKeys": ["Gb7dfe16e-612c-483f-bbe0~1577865600000","Gb74fe8f4-dca3-41d4-b0e1~1577865600000"]
+	"pipelineKeys": [
+		"Gb7dfe16e-612c-483f-bbe0~1577865600000",
+		"Gb74fe8f4-dca3-41d4-b0e1~1577865600000"
+	]
 }

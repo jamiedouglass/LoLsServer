@@ -30,16 +30,16 @@ function initialize() {
 
 function startShutdown() {
 	console.log("\nStarting Shutdown...");
-	server.close(() => {
-		console.log("Shutdown Complete");
-		process.exit(0);
-	});
 	setTimeout(() => {
         console.error('Could not close gracefully, forcefully shutting down');
         process.exit(1);
-    }, 10000);
+    }, 10000); 
     // save resources
     saveLoLsResources();
+	server.close(() => {
+		console.log("Shutdown Complete");
+		process.exit(0);
+	}); 
 }
 
 class LanguageOfLanguages {
@@ -166,12 +166,14 @@ var files = fs.readdirSync(LoLsResources);
 		})
 	}
 	store(replace, callback) {
-		var writeIfExists = replace == true ? 'w' : 'wx';
+		var opt = {flag: 'wx'};
+		if (replace = true)
+			opt.flag = "w";
 		if (callback == undefined)
-			callback = function() {};
-		fs.writeFile(LoLsResources + this.filename, this.serialize, 
-					{flag: writeIfExists}, callback);
-		this._saved = true;		
+			callback = () => {};
+		fs.writeFileSync(LoLsResources+this.filename,this.serialize,opt);
+		this._saved = true;
+		callback();
 	}
 }
 
@@ -412,8 +414,9 @@ function getLoLsResource(key, callback) {
 function saveLoLsResources(force) {
 	var here = LoLsResHead;
 	while (here != undefined) {
-		if (force == true || here.saved == false)
+		if (force == true || here.saved == false) {
 			here.store(true);
+		}
 		here = here.nextRes;
 	}
 }

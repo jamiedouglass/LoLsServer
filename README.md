@@ -11,9 +11,10 @@ with different notations.
 
 This open source project provides a minimal working language workbench. 
 This version supports textual languages and enough functionality to develop 
-future releases. We are creating a Language Workbench and Server which 
-operates with a client-server architecture as a Website and server. There is nothing 
-to download or install. 
+future releases. We created a Language Workbench which operates using a client-server 
+architecture. There is nothing to download or install. The LoLs Server maybe
+installed by users to create a personal implementation and support headless or embedded
+LoLs interpreters and translators.
 
 Most of the workbench features and functionality are yet to be implemented. 
 Please join us to make Language of Languages available to everyone.
@@ -34,7 +35,7 @@ Overview
 --------
 
 Language of Languages (LoLs) is being bootstrapped and written in itself. This includes 
-the parser and metalanguage. LoLs compiles into JavaScript and directly executed. Work is
+the parser and metalanguage. LoLs compiles into JavaScript and executes directly. Work is
 divided into workspace files. Each workspace consists of interrelated views and languages.
 
 Project Organization
@@ -47,9 +48,9 @@ Language of Languages is organized as following:
 Using Language of languages (LoLs) Workbench
 --------------------------------------------
 
-LoLs is accessible for the workbench link on the Language of Languages (LoLs) website
+LoLs is accessible from the workbench link on the Language of Languages (LoLs) website
 [www.languageoflanguages.com/LoLsWorkbench/](http://www.languageoflanguages.com/LoLsWorkbench/).
-Workspace files can be loaded and saved to your computer.
+User Workspace files can be loaded and saved to your computer.
 
 Reporting issues
 ----------------
